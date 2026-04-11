@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="場所マップ">
+<title>よく行く場所</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0a0a18;--panel:#12122a;--border:#2a2a50;--gold:#e8c84a;--text:#f0ead8;--sub:#8880a0;
+  --app-bg:#f7f6f3;--app-surface:#fff;--app-border:rgba(0,0,0,.1);
+  --app-text:#111;--app-sub:#666;--app-hint:#aaa;
+  --app-blue:#1a6ed8;--app-red:#e02020;--app-green:#1a9a3a;
+}
+html,body{height:100%;overflow:hidden;background:#000}
+
+/* ── RIPPLE ── */
+.ripple-host{position:relative;overflow:hidden}
+@keyframes ripple-anim{
+  0%{transform:scale(0);opacity:.35}
+  100%{transform:scale(2.8);opacity:0}
+}
+.ripple-dot{
+  position:absolute;border-radius:50%;
+  background:rgba(0,0,0,.18);pointer-events:none;
+  animation:ripple-anim .45s ease-out forwards;
+  transform-origin:center;
+}
+
+/* ── OPENING ── */
+#opening{
+  position:fixed;inset:0;z-index:100;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:'Hiragino Kaku Gothic ProN','MS Gothic',monospace;color:var(--text);
+  transition:opacity .5s;cursor:pointer;
+}
+#opening.fade{opacity:0;pointer-events:none}
+.dq-logo{font-size:13px;letter-spacing:4px;color:var(--sub);margin-bottom:20px;animation:fin 1s .3s both}
+.dq-title{
+  font-size:22px;font-weight:700;color:var(--gold);letter-spacing:3px;
+  border:2px solid var(--gold);padding:10px 28px;margin-bottom:28px;
+  animation:fin 1s .8s both;position:relative;
+}
+.dq-title::before,.dq-title::after{content:'◆';position:absolute;top:50%;transform:translateY(-50%);font-size:10px;color:var(--gold)}
+.dq-title::before{left:8px}.dq-title::after{right:8px}
+.dq-window{border:2px solid var(--border);background:var(--panel);padding:16px 20px;width:280px;animation:fin .5s 1.5s both}
+.dq-msg{font-size:13px;line-height:2;min-height:52px;white-space:pre-wrap}
+.dq-foot{text-align:right;height:18px;margin-top:4px}
+.dq-tap{font-size:12px;color:var(--gold);animation:blink .9s step-end infinite}
+.dq-skip{margin-top:24px;font-size:11px;color:var(--sub);letter-spacing:2px;animation:fin .5s 1.5s both}
+@keyframes fin{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ── APP: fixed layout ── */
+#app{
+  position:fixed;inset:0;z-index:10;background:var(--app-bg);
+  font-family:-apple-system,'Helvetica Neue',sans-serif;color:var(--app-text);
+  opacity:0;pointer-events:none;transition:opacity .4s;
+  display:flex;flex-direction:column;
+}
+#app.show{opacity:1;pointer-events:auto}
+
+/* ヘッダー：固定 */
+.hdr{
+  flex-shrink:0;
+  padding:52px 20px 13px;background:var(--app-surface);
+  border-bottom:.5px solid var(--app-border);
+}
+.hdr-title{font-size:26px;font-weight:700;letter-spacing:-.5px}
+.hdr-sub{font-size:12px;color:var(--app-sub);margin-top:2px}
+
+/* マップボタンパネル：固定 */
+.map-panel{
+  flex-shrink:0;
+  padding:12px 16px 10px;
+  background:var(--app-bg);
+  border-bottom:.5px solid var(--app-border);
+}
+.sec-lbl{font-size:11px;font-weight:600;color:var(--app-hint);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;padding:0 2px}
+.map-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
+.map-btn{
+  background:var(--app-surface);border:.5px solid var(--app-border);
+  border-radius:12px;padding:10px 8px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:5px;-webkit-appearance:none;
+}
+.map-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+.map-name{font-size:12px;font-weight:600;color:var(--app-text)}
+.map-desc{font-size:10px;color:var(--app-hint)}
+.map-hint{font-size:11px;color:var(--app-hint);text-align:center}
+
+/* スクロール領域：残り全部 */
+.scroll-area{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  min-height:0;
+}
+.sec{padding:0 16px;margin-top:16px}
+
+/* place list */
+.place-list{display:flex;flex-direction:column;gap:1px;background:var(--app-border);border-radius:12px;overflow:hidden;margin-bottom:12px}
+.pi{
+  background:var(--app-surface);padding:11px 13px;
+  display:flex;align-items:center;gap:11px;cursor:pointer;
+  transition:background .1s;position:relative;
+}
+.pi.sel{background:#eef4ff}
+.pi.sel::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--app-blue)}
+.pi-icon{width:36px;height:36px;border-radius:9px;background:#e8e8f0;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.pi.sel .pi-icon{background:#d0e0ff}
+.pi-body{flex:1;min-width:0}
+.pi-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pi-addr{font-size:11px;color:var(--app-sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pi-note{display:inline-block;font-size:10px;color:var(--app-sub);background:#f0f0f0;border-radius:4px;padding:1px 6px;margin-top:2px}
+.pi.sel .pi-note{background:#dde8ff;color:var(--app-blue)}
+.pi-arr{
+  font-size:20px;color:#ccc;flex-shrink:0;
+  width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+  border-radius:8px;margin-left:2px;cursor:pointer;
+}
+.pi-arr:active{background:#eee;color:#999}
+
+.empty-card{background:var(--app-surface);border-radius:12px;padding:24px;text-align:center;color:var(--app-hint);font-size:13px;margin-bottom:12px}
+.add-btn{
+  width:100%;background:var(--app-surface);border:.5px dashed rgba(0,0,0,.15);
+  border-radius:12px;padding:11px;font-size:13px;font-weight:500;color:var(--app-blue);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;-webkit-appearance:none;
+}
+
+/* form */
+.form-card{background:var(--app-surface);border-radius:12px;overflow:hidden;margin-top:8px;border:.5px solid var(--app-border);display:none}
+.form-card.open{display:block}
+.ff{padding:0 14px;border-bottom:.5px solid var(--app-border)}
+.ff label{display:block;font-size:10px;font-weight:600;color:var(--app-hint);text-transform:uppercase;letter-spacing:.06em;padding-top:9px}
+.ff input{width:100%;border:none;outline:none;font-size:15px;color:var(--app-text);padding:5px 0 9px;background:transparent;font-family:inherit}
+.ff input::placeholder{color:var(--app-hint)}
+.form-acts{display:flex;border-top:.5px solid var(--app-border)}
+.fbtn{flex:1;padding:13px;border:none;background:transparent;font-size:15px;cursor:pointer;font-family:inherit}
+.fbtn:first-child{border-right:.5px solid var(--app-border);color:var(--app-sub)}
+.fbtn.ok{color:var(--app-blue);font-weight:600}
+
+/* backup */
+.bk-card{background:var(--app-surface);border-radius:12px;border:.5px solid var(--app-border);overflow:hidden;margin-bottom:52px}
+.bk-row{display:flex;align-items:center;padding:12px 14px;border-bottom:.5px solid var(--app-border);gap:10px}
+.bk-row:last-child{border-bottom:none}
+.bk-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.bk-text{flex:1;min-width:0}
+.bk-label{font-size:14px;font-weight:500}
+.bk-desc{font-size:11px;color:var(--app-hint);margin-top:1px}
+.bk-btn{border:none;border-radius:8px;padding:7px 13px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0}
+.bk-btn.exp{background:#eef4ff;color:var(--app-blue)}
+.bk-btn.imp{background:#eefaf2;color:var(--app-green)}
+#restoreInput{display:none}
+
+/* modals */
+.overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s}
+.overlay.show{opacity:1;pointer-events:auto}
+.sheet{background:var(--app-surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:16px 20px 44px;transform:translateY(36px);transition:transform .22s}
+.overlay.show .sheet{transform:none}
+.sh-handle{width:36px;height:4px;background:#e0e0e0;border-radius:2px;margin:0 auto 14px}
+.sh-title{font-size:17px;font-weight:700;margin-bottom:4px}
+.sh-sub{font-size:13px;color:var(--app-sub);line-height:1.6;margin-bottom:14px;white-space:pre-wrap}
+.sh-preview{background:#f5f5f5;border-radius:8px;padding:10px 12px;font-size:11px;color:#555;margin-bottom:14px;max-height:90px;overflow-y:auto;line-height:1.7}
+.sh-btns{display:flex;flex-direction:column;gap:8px}
+.sh-btn{width:100%;padding:13px;border-radius:12px;border:none;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+.sh-btn.blue{background:var(--app-blue);color:#fff}
+.sh-btn.gray{background:#f0f0f0;color:var(--app-sub)}
+.sh-btn.red{background:#ffeeee;color:var(--app-red)}
+
+/* detail */
+.det-icon{font-size:36px;text-align:center;margin-bottom:10px}
+.det-name{font-size:20px;font-weight:700;margin-bottom:6px}
+.det-rows{border:.5px solid var(--app-border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.det-row{display:flex;gap:10px;padding:10px 14px;border-bottom:.5px solid var(--app-border);align-items:flex-start}
+.det-row:last-child{border-bottom:none}
+.det-key{font-size:11px;font-weight:600;color:var(--app-hint);text-transform:uppercase;letter-spacing:.06em;min-width:44px;padding-top:2px}
+.det-val{font-size:14px;color:var(--app-text);flex:1;line-height:1.5}
+.det-map-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+
+/* toast */
+.toast-wrap{position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:500;pointer-events:none}
+.toast{background:rgba(20,20,20,.88);color:#fff;font-size:13px;padding:9px 18px;border-radius:20px;white-space:nowrap;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;font-family:inherit}
+.toast.show{opacity:1;transform:none}
+</style>
+</head>
+<body>
+
+<!-- OPENING -->
+<div id="opening">
+  <div class="dq-logo">- PRESENTED BY -</div>
+  <div class="dq-title">よく行く場所</div>
+  <div class="dq-window">
+    <div class="dq-msg" id="dqMsg"></div>
+    <div class="dq-foot"><span class="dq-tap" id="dqTap" style="display:none">タップしてはじめる ▼</span></div>
+  </div>
+  <div class="dq-skip">（タップでスキップ）</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- ヘッダー固定 -->
+  <div class="hdr">
+    <div class="hdr-title">よく行く場所</div>
+    <div class="hdr-sub">場所をタップして詳細・マップを開く</div>
+  </div>
+
+  <!-- マップボタン固定 -->
+  <div class="map-panel">
+    <div class="sec-lbl">マップで開く</div>
+    <div class="map-grid">
+      <button class="map-btn ripple-host" onclick="openMap('apple')">
+        <div class="map-icon" style="background:#e8f3fd">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M10 2C7.24 2 5 4.24 5 7c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" fill="#1a7fd4"/>
+          </svg>
+        </div>
+        <div class="map-name">Apple マップ</div>
+        <div class="map-desc">純正で開く</div>
+      </button>
+      <button class="map-btn ripple-host" onclick="openMap('google')">
+        <div class="map-icon" style="background:#fef0ee">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M10 2C7.24 2 5 4.24 5 7c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" fill="#ea4335"/>
+          </svg>
+        </div>
+        <div class="map-name">Google マップ</div>
+        <div class="map-desc">Googleで開く</div>
+      </button>
+    </div>
+    <div class="map-hint" id="mapHint">場所をタップして選択してください</div>
+  </div>
+
+  <!-- スクロール領域 -->
+  <div class="scroll-area" id="scrollArea">
+    <div class="sec">
+      <div class="sec-lbl">登録地点</div>
+      <div id="placeList"></div>
+      <button class="add-btn ripple-host" onclick="toggleForm()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        場所を追加
+      </button>
+      <div class="form-card" id="formCard">
+        <div class="ff">
+          <label>場所の名前</label>
+          <input id="fName" type="text" placeholder="例：京都中央郵便局">
+        </div>
+        <div class="ff">
+          <label>住所</label>
+          <input id="fAddr" type="text" placeholder="例：京都市下京区東塩小路町843">
+        </div>
+        <div class="ff" style="border-bottom:none">
+          <label>メモ（任意）</label>
+          <input id="fNote" type="text" placeholder="例：集荷ルートA">
+        </div>
+        <div class="form-acts">
+          <button class="fbtn ripple-host" onclick="toggleForm()">キャンセル</button>
+          <button class="fbtn ok ripple-host" onclick="addPlace()">登録</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec" style="margin-top:18px">
+      <div class="sec-lbl">バックアップ・復元</div>
+      <div class="bk-card">
+        <div class="bk-row">
+          <div class="bk-icon" style="background:#eef4ff">📤</div>
+          <div class="bk-text">
+            <div class="bk-label">バックアップ</div>
+            <div class="bk-desc">JSONファイルで書き出す</div>
+          </div>
+          <button class="bk-btn exp ripple-host" onclick="exportBackup()">書き出す</button>
+        </div>
+        <div class="bk-row">
+          <div class="bk-icon" style="background:#eefaf2">📥</div>
+          <div class="bk-text">
+            <div class="bk-label">復元</div>
+            <div class="bk-desc">JSONファイルから読み込む</div>
+          </div>
+          <button class="bk-btn imp ripple-host" onclick="document.getElementById('restoreInput').click()">読み込む</button>
+          <input type="file" id="restoreInput" accept=".json,application/json" onchange="importBackup(event)">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 詳細シート -->
+<div class="overlay" id="detailModal">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="det-icon" id="detIcon"></div>
+    <div class="det-name" id="detName"></div>
+    <div class="det-rows">
+      <div class="det-row">
+        <div class="det-key">住所</div>
+        <div class="det-val" id="detAddr"></div>
+      </div>
+      <div class="det-row" id="detNoteRow">
+        <div class="det-key">メモ</div>
+        <div class="det-val" id="detNote"></div>
+      </div>
+    </div>
+    <div class="det-map-row">
+      <button class="sh-btn blue ripple-host" onclick="openMapDirect('apple')">Apple マップで開く</button>
+      <button class="sh-btn blue ripple-host" style="background:#ea4335" onclick="openMapDirect('google')">Google マップで開く</button>
+    </div>
+    <div class="sh-btns">
+      <button class="sh-btn red ripple-host" onclick="delFromDetail()">この場所を削除</button>
+      <button class="sh-btn gray ripple-host" onclick="closeDetail()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- 復元確認シート -->
+<div class="overlay" id="restoreModal">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title">データを復元しますか？</div>
+    <div class="sh-sub" id="restoreSub"></div>
+    <div class="sh-preview" id="restorePreview"></div>
+    <div class="sh-btns">
+      <button class="sh-btn blue ripple-host" onclick="confirmRestore()">復元する（現在のデータは上書きされます）</button>
+      <button class="sh-btn gray ripple-host" onclick="closeRestore()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap"><div class="toast" id="toast"></div></div>
+
+<script>
+/* ── Ripple ── */
+function addRipple(e){
+  const el=e.currentTarget;
+  const r=el.getBoundingClientRect();
+  const size=Math.max(r.width,r.height)*1.4;
+  const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left-size/2;
+  const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top-size/2;
+  const dot=document.createElement('span');
+  dot.className='ripple-dot';
+  dot.style.cssText=`width:${size}px;height:${size}px;left:${x}px;top:${y}px`;
+  el.appendChild(dot);
+  setTimeout(()=>dot.remove(),480);
+}
+document.addEventListener('pointerdown',e=>{
+  const host=e.target.closest('.ripple-host');
+  if(host)addRipple({currentTarget:host,clientX:e.clientX,clientY:e.clientY});
+},{passive:true});
+
+/* ── Audio ── */
+let actx=null;
+function initAudio(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)()}
+function tone(freq,dur,type,vol){
+  if(!actx)return;
+  const o=actx.createOscillator(),g=actx.createGain();
+  o.connect(g);g.connect(actx.destination);
+  o.type=type||'square';o.frequency.value=freq;
+  g.gain.setValueAtTime(vol||.11,actx.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+dur);
+  o.start();o.stop(actx.currentTime+dur);
+}
+const sFanfare=()=>[[784,80],[880,80],[988,80],[1047,160],[988,80],[1047,160],[880,80],[1047,280]].reduce((t,[f,d])=>{setTimeout(()=>tone(f,d/1000,'square',.12),t);return t+d+8;},0);
+const sCursor =()=>tone(880,.04,'square',.06);
+const sSelect =()=>{tone(523,.07,'square',.1);setTimeout(()=>tone(659,.07,'square',.1),65);setTimeout(()=>tone(784,.1,'square',.1),130)};
+const sOpen   =()=>[523,587,659,784,880].forEach((f,i)=>setTimeout(()=>tone(f,.09,'square',.1),i*50));
+const sAdd    =()=>{tone(659,.07,'square',.09);setTimeout(()=>tone(784,.07,'square',.09),70);setTimeout(()=>tone(1047,.13,'square',.09),140)};
+const sDel    =()=>tone(280,.13,'square',.09);
+const sErr    =()=>tone(200,.18,'square',.12);
+const sScroll =()=>tone(1046,.022,'square',.045);
+const sClose  =()=>tone(440,.08,'square',.07);
+const sBackup =()=>{tone(784,.07,'square',.09);setTimeout(()=>tone(880,.12,'square',.09),80)};
+
+/* ── Opening ── */
+const MSG='ようこそ\nよく行く場所へ。';
+let charIdx=0,typTimer=null,opened=false;
+function typeNext(){
+  const el=document.getElementById('dqMsg');
+  if(charIdx<MSG.length){
+    el.textContent=MSG.slice(0,charIdx+1);
+    charIdx++;
+    if(charIdx%2===0)sCursor();
+    typTimer=setTimeout(typeNext,70);
+  } else {
+    document.getElementById('dqTap').style.display='inline';
+  }
+}
+document.getElementById('opening').addEventListener('click',()=>{
+  if(opened)return;
+  opened=true;
+  initAudio();
+  clearTimeout(typTimer);
+  sSelect();
+  startApp();
+});
+function startApp(){
+  sFanfare();
+  document.getElementById('opening').classList.add('fade');
+  setTimeout(()=>{
+    document.getElementById('opening').style.display='none';
+    document.getElementById('app').classList.add('show');
+    render();
+    setupScroll(document.getElementById('scrollArea'));
+  },600);
+}
+
+/* ── Scroll sound ── */
+function setupScroll(el){
+  let lastY=0,cnt=0,tick=false;
+  el.addEventListener('scroll',()=>{
+    if(tick)return;tick=true;
+    requestAnimationFrame(()=>{
+      const y=el.scrollTop;
+      if(Math.abs(y-lastY)>=16){cnt++;if(cnt%2===0)sScroll();lastY=y;}
+      tick=false;
+    });
+  },{passive:true});
+}
+
+/* ── Data ── */
+const KEY='map_places_v2';
+let places=JSON.parse(localStorage.getItem(KEY)||'null');
+let sel=-1;
+if(!places){
+  places=[
+    {name:'京都中央郵便局',addr:'京都市下京区東塩小路町843-12',note:'京都駅近く'},
+    {name:'京都山科郵便局',addr:'京都市山科区安朱稲荷山町35',note:''},
+  ];
+  save();
+}
+function save(){localStorage.setItem(KEY,JSON.stringify(places))}
+
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2400);
+}
+
+const EMAP=[
+  ['郵便局','📮'],['郵便','📮'],['コンビニ','🏪'],['スーパー','🛒'],
+  ['駅','🚉'],['病院','🏥'],['銀行','🏦'],['学校','🏫'],
+  ['公園','🌳'],['ホテル','🏨'],['空港','✈️'],['港','⚓'],['図書館','📚'],
+];
+function emoji(name){for(const[k,v]of EMAP){if(name.includes(k))return v;}return '📍'}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+/* ── Render ── */
+function render(){
+  const ul=document.getElementById('placeList');
+  if(!places.length){
+    ul.innerHTML='<div class="empty-card">まだ場所が登録されていません</div>';
+    updateMapHint();return;
+  }
+  ul.innerHTML='<div class="place-list">'+places.map((p,i)=>`
+    <div class="pi${sel===i?' sel':''} ripple-host" onclick="selectPlace(${i})">
+      <div class="pi-icon">${emoji(p.name)}</div>
+      <div class="pi-body">
+        <div class="pi-name">${esc(p.name)}</div>
+        <div class="pi-addr">${esc(p.addr)}</div>
+        ${p.note?`<span class="pi-note">${esc(p.note)}</span>`:''}
+      </div>
+      <span class="pi-arr" onclick="event.stopPropagation();openDetail(${i})">›</span>
+    </div>
+  `).join('')+'</div>';
+  updateMapHint();
+}
+
+function updateMapHint(){
+  const hint=document.getElementById('mapHint');
+  if(sel>=0&&sel<places.length){
+    hint.textContent='選択中：'+places[sel].name;
+    hint.style.color='var(--app-blue)';
+    hint.style.fontWeight='500';
+  } else {
+    hint.textContent='場所をタップして選択してください';
+    hint.style.color='var(--app-hint)';
+    hint.style.fontWeight='400';
+  }
+}
+
+/* ── Select (row tap) ── */
+function selectPlace(i){
+  sel=i;render();sSelect();
+  updateMapHint();
+}
+
+/* ── Detail (arrow tap only) ── */
+let detIdx=-1;
+function openDetail(i){
+  detIdx=i;sel=i;render();
+  const p=places[i];
+  document.getElementById('detIcon').textContent=emoji(p.name);
+  document.getElementById('detName').textContent=p.name;
+  document.getElementById('detAddr').textContent=p.addr;
+  const nr=document.getElementById('detNoteRow');
+  const nv=document.getElementById('detNote');
+  if(p.note){nv.textContent=p.note;nr.style.display='flex';}
+  else{nr.style.display='none';}
+  document.getElementById('detailModal').classList.add('show');
+  sSelect();
+}
+function closeDetail(){
+  document.getElementById('detailModal').classList.remove('show');
+  sClose();detIdx=-1;
+}
+function delFromDetail(){
+  if(detIdx<0)return;
+  const n=places[detIdx].name;
+  places.splice(detIdx,1);
+  if(sel===detIdx)sel=-1;else if(sel>detIdx)sel--;
+  save();render();closeDetail();sDel();toast(n+' を削除しました');
+}
+function openMapDirect(type){
+  if(detIdx<0)return;
+  const q=encodeURIComponent(places[detIdx].addr||places[detIdx].name);
+  sOpen();
+  if(type==='apple'){window.location.href='maps://?q='+q;setTimeout(()=>window.location.href='https://maps.apple.com/?q='+q,400);}
+  else{window.location.href='comgooglemaps://?daddr='+q+'&directionsmode=driving';setTimeout(()=>window.location.href='https://maps.google.com/?q='+q,400);}
+}
+document.getElementById('detailModal').addEventListener('click',function(e){if(e.target===this){closeDetail();}});
+
+/* ── Map buttons ── */
+function openMap(type){
+  if(sel<0||sel>=places.length){sErr();toast('リストから場所をタップして選んでください');return;}
+  const q=encodeURIComponent(places[sel].addr||places[sel].name);
+  sOpen();
+  if(type==='apple'){window.location.href='maps://?q='+q;setTimeout(()=>window.location.href='https://maps.apple.com/?q='+q,400);}
+  else{window.location.href='comgooglemaps://?daddr='+q+'&directionsmode=driving';setTimeout(()=>window.location.href='https://maps.google.com/?q='+q,400);}
+}
+
+/* ── Form ── */
+function toggleForm(){
+  const f=document.getElementById('formCard');
+  f.classList.toggle('open');
+  if(f.classList.contains('open')){
+    ['fName','fAddr','fNote'].forEach(id=>document.getElementById(id).value='');
+    setTimeout(()=>document.getElementById('fName').focus(),80);
+    sSelect();
+  } else {
+    sClose();
+  }
+}
+function addPlace(){
+  const name=document.getElementById('fName').value.trim();
+  const addr=document.getElementById('fAddr').value.trim();
+  const note=document.getElementById('fNote').value.trim();
+  if(!name||!addr){sErr();toast('名前と住所を入力してください');return;}
+  places.push({name,addr,note});
+  save();sel=places.length-1;render();
+  toggleForm();sAdd();toast(name+' を登録しました');
+}
+
+/* ── Backup ── */
+let pendingRestore=null;
+function exportBackup(){
+  const latest=JSON.parse(localStorage.getItem(KEY)||'[]');
+  if(!latest.length){sErr();toast('登録されている場所がありません');return;}
+  const json=JSON.stringify({version:2,exportedAt:new Date().toISOString(),count:latest.length,places:latest},null,2);
+  const date=new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const fname='map_places_'+date+'.json';
+  try{
+    const b=new Blob([json],{type:'application/json'});
+    const u=URL.createObjectURL(b);
+    const a=Object.assign(document.createElement('a'),{href:u,download:fname});
+    document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(u);document.body.removeChild(a);},800);
+  }catch(_){
+    const a=Object.assign(document.createElement('a'),{href:'data:application/json;charset=utf-8,'+encodeURIComponent(json),download:fname});
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+  }
+  sBackup();toast(latest.length+'件を書き出しました');
+}
+function importBackup(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const raw=JSON.parse(ev.target.result);
+      const loaded=Array.isArray(raw)?raw:(raw.places&&Array.isArray(raw.places)?raw.places:null);
+      if(!loaded||!loaded.length||typeof loaded[0].name!=='string')throw 0;
+      pendingRestore=loaded;
+      document.getElementById('restoreSub').textContent=file.name+'\n'+loaded.length+'件が見つかりました。現在の'+places.length+'件は上書きされます。';
+      document.getElementById('restorePreview').textContent=loaded.slice(0,6).map(p=>'・'+p.name+' — '+p.addr).join('\n')+(loaded.length>6?'\n…他'+(loaded.length-6)+'件':'');
+      document.getElementById('restoreModal').classList.add('show');
+      sSelect();
+    }catch(_){sErr();toast('ファイルの形式が正しくありません');}
+    e.target.value='';
+  };
+  reader.readAsText(file,'utf-8');
+}
+function confirmRestore(){
+  if(!pendingRestore)return;
+  places=pendingRestore;pendingRestore=null;
+  sel=-1;save();render();closeRestore();
+  sFanfare();toast(places.length+'件を復元しました');
+}
+function closeRestore(){
+  document.getElementById('restoreModal').classList.remove('show');
+  sClose();pendingRestore=null;
+}
+document.getElementById('restoreModal').addEventListener('click',function(e){if(e.target===this)closeRestore();});
+
+setTimeout(typeNext,1000);
+</script>
+</body>
+</html>
