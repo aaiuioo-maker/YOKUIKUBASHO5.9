@@ -348,7 +348,7 @@ body{position:fixed;inset:0;width:100%}
         </button>
         <button class="add-btn ripple-host" onclick="openFolderForm()">📁 フォルダを作る</button>
       </div>
-      <div class="drag-tip">「≡」をつかんでフォルダの上に持っていくと、そのフォルダに入ります</div>
+      <div class="drag-tip">「≡」をつかんでフォルダに持っていくと入ります</div>
     </div>
 
     <div class="sec" style="margin-top:18px">
@@ -822,6 +822,7 @@ function dragStart(e){
   const gap=rows.length>1?rects[1].top-rects[0].bottom:0;
   const last=rects[rects.length-1];
   drag={kind:isFolder?'folder':'place',i,to:i,g,rows,row,mids,sa,h:rects[i].height+gap,
+    top:rects[i].top+sa.scrollTop,bot:rects[i].bottom+sa.scrollTop,
     startY:evY(e),y:evY(e),x:evX(e),startScroll:sa.scrollTop,
     minDy:rects[0].top-rects[i].top,maxDy:last.bottom-rects[i].bottom,
     src:isFolder?'':folderOf(places[g[i]]),drop:null};
@@ -866,11 +867,11 @@ function dragUpdate(){
   const pe=d.drop&&d.drop.el,ne=drop&&drop.el;
   if(pe!==ne){pe&&pe.classList.remove('drop-on');if(ne){ne.classList.add('drop-on');sCursor();}}
   d.drop=drop;
-  // 並べ替え先：持っている行の中心より上にある行の数
+  // 並べ替え先：持っている行の端（下へなら下端、上へなら上端）が、ほかの行の真ん中を越えたら入れ替える
   let to=d.i;
   if(!drop){
-    const c=Math.max(d.mids[0],Math.min(d.mids[d.mids.length-1],d.mids[d.i]+dy));
-    to=d.mids.filter((m,j)=>j!==d.i&&m<c).length;
+    const edge=dy>0?d.bot+dy:d.top+dy;
+    to=d.mids.filter((m,j)=>j!==d.i&&m<edge).length;
   }
   if(to!==d.to){d.to=to;sCursor();}
   d.rows.forEach((r,j)=>{
