@@ -334,7 +334,7 @@ body{position:fixed;inset:0;width:100%}
   <!-- スクロール領域 -->
   <div class="scroll-area" id="scrollArea">
     <div class="sec" id="topSec">
-      <div class="sec-lbl">よく行く場所</div>
+      <div class="sec-lbl">フォルダに入っていない場所</div>
       <div id="placeList"></div>
     </div>
 
@@ -430,7 +430,7 @@ body{position:fixed;inset:0;width:100%}
     <div class="pk-grid" id="pkGrid"></div>
     <input type="file" id="pkFile" accept="image/*" onchange="addCustomImage(event)">
     <div class="sh-btns" style="margin-top:12px">
-      <button class="sh-btn gray ripple-host" onclick="pickIcon('')">おまかせ（名前から自動）に戻す</button>
+      <button class="sh-btn gray ripple-host" id="pkReset" onclick="pickIcon('')">おまかせ（名前から自動）に戻す</button>
       <button class="sh-btn gray ripple-host" onclick="closePicker()">閉じる</button>
     </div>
   </div>
@@ -566,7 +566,7 @@ function saveFolders(){localStorage.setItem(FKEY,JSON.stringify(folders))}
 function saveOpen(){try{localStorage.setItem(FOPEN,JSON.stringify(openFolders))}catch(_){}}
 function folderOf(p){return p.folder&&folders.some(f=>f.id===p.folder)?p.folder:''}
 function folderOptions(){
-  return '<option value="">なし（よく行く場所）</option>'+folders.map(f=>`<option value="${esc(f.id)}">📁 ${esc(f.name)}</option>`).join('');
+  return '<option value="">フォルダに入れない</option>'+folders.map(f=>`<option value="${esc(f.id)}">📁 ${esc(f.name)}</option>`).join('');
 }
 
 function toast(msg){
@@ -658,7 +658,11 @@ function addCustomImage(e){
 }
 function openPicker(target){
   pkTarget=target;
-  const cur=target==='form'?formIcon:(places[detIdx]&&places[detIdx].icon)||'';
+  // target は 'form'・'detail'・フォルダの番号（数字）
+  const isFd=typeof target==='number';
+  const cur=target==='form'?formIcon:isFd?(folders[target].icon||''):(places[detIdx]&&places[detIdx].icon)||'';
+  document.getElementById('pkReset').textContent=isFd?'元のフォルダのアイコンに戻す':'おまかせ（名前から自動）に戻す';
+  if(isFd&&!iconSrc(cur))pkTab=1;
   document.activeElement&&document.activeElement.blur();
   pkCur=cur;
   if(iconSrc(cur))pkTab=0;
@@ -669,6 +673,10 @@ function openPicker(target){
 function closePicker(){document.getElementById('pickerModal').classList.remove('show');sClose();}
 function pickIcon(ic){
   if(pkTarget==='form'){formIcon=ic;updateFormIcon();}
+  else if(typeof pkTarget==='number'){
+    const f=folders[pkTarget];
+    if(f){if(ic)f.icon=ic;else delete f.icon;saveFolders();render();}
+  }
   else if(detIdx>=0){
     if(ic)places[detIdx].icon=ic;else delete places[detIdx].icon;
     save();render();
@@ -702,9 +710,10 @@ function rowsHTML(list){
 function render(){
   const all=places.map((p,i)=>[p,i]);
   // よく行く場所（フォルダに入っていないもの）は常に表示
+  // フォルダ単位で使うので、フォルダに入っていない場所があるときだけ上に出す
   const top=all.filter(([p])=>!folderOf(p));
-  document.getElementById('placeList').innerHTML=top.length?rowsHTML(top)
-    :`<div class="empty-card">${places.length?'フォルダに入っていない場所はありません':'まだ場所が登録されていません'}</div>`;
+  document.getElementById('topSec').style.display=top.length?'':'none';
+  document.getElementById('placeList').innerHTML=top.length?rowsHTML(top):'';
   // フォルダ：タップで開いて中身を見る
   document.getElementById('folderList').innerHTML=folders.length?'<div class="fd-list">'+folders.map((f,fi)=>{
     const items=all.filter(([p])=>p.folder===f.id);
@@ -712,7 +721,7 @@ function render(){
     return `<div class="fd${open?' open':''}" data-f="${fi}">
       <div class="fd-head ripple-host" onclick="toggleFolder(${fi})">
         <span class="pi-handle fd-handle" onclick="event.stopPropagation()">≡</span>
-        <div class="fd-ic">${open?'📂':'📁'}</div>
+        <div class="fd-ic" onclick="event.stopPropagation();openPicker(${fi})">${f.icon?iconHTML(f.icon):(open?'📂':'📁')}</div>
         <div class="fd-name">${esc(f.name)}</div>
         <span class="fd-cnt">${items.length}件</span>
         <span class="fd-chev">›</span>
@@ -895,7 +904,7 @@ function dragEnd(){
     sel=cur?places.indexOf(cur):-1;
     save();sAdd();
     const f=folders.find(x=>x.id===d.drop.folder);
-    toast(f?'📁 '+f.name+' に入れました':'よく行く場所に戻しました');
+    toast(f?'📁 '+f.name+' に入れました':'フォルダから出しました');
   }else if(d.to!==d.i){
     if(d.kind==='folder'){
       const [m]=folders.splice(d.i,1);
@@ -962,7 +971,7 @@ function moveFolder(fid){
   else delete p.folder;
   save();render();sAdd();
   const f=folders.find(x=>x.id===fid);
-  toast(f?'📁 '+f.name+' に入れました':'よく行く場所に戻しました');
+  toast(f?'📁 '+f.name+' に入れました':'フォルダから出しました');
 }
 function goMap(type,p){
   const q=encodeURIComponent(p.addr||p.name);
@@ -992,7 +1001,9 @@ function toggleForm(fid){
   if(f.classList.contains('show')){
     ['fName','fAddr','fNote'].forEach(id=>document.getElementById(id).value='');
     const fs=document.getElementById('fFolder');
-    fs.innerHTML=folderOptions();fs.value=fid||'';
+    // 下の「場所を追加」から開いたときは、開いているフォルダ（無ければ一番上のフォルダ）に入れる
+    const def=fid||(folders.find(f=>openFolders.includes(f.id))||folders[0]||{}).id||'';
+    fs.innerHTML=folderOptions();fs.value=def;
     formIcon='';updateFormIcon();
     document.getElementById('fName').focus();
     sSelect();
