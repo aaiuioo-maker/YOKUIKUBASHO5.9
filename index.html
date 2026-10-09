@@ -384,10 +384,6 @@ body{position:fixed;inset:0;width:100%}
           <input id="fAddr" type="text" placeholder="例：京都市下京区東塩小路町843">
         </div>
         <div class="ff">
-          <label>メモ（任意）</label>
-          <input id="fNote" type="text" placeholder="例：集荷ルートA">
-        </div>
-        <div class="ff">
           <label>入れる場所</label>
           <select id="fFolder"></select>
         </div>
@@ -1026,7 +1022,7 @@ function toggleForm(fid){
   const f=document.getElementById('formCard');
   f.classList.toggle('show');
   if(f.classList.contains('show')){
-    ['fName','fAddr','fNote'].forEach(id=>document.getElementById(id).value='');
+    ['fName','fAddr'].forEach(id=>document.getElementById(id).value='');
     const fs=document.getElementById('fFolder');
     // 下の「場所を追加」から開いたときは、開いているフォルダ（無ければ一番上のフォルダ）に入れる
     const def=fid||(folders.find(f=>openFolders.includes(f.id))||folders[0]||{}).id||'';
@@ -1043,7 +1039,7 @@ document.getElementById('formCard').addEventListener('click',function(e){if(e.ta
 function addPlace(){
   const name=document.getElementById('fName').value.trim();
   const addr=document.getElementById('fAddr').value.trim();
-  const note=document.getElementById('fNote').value.trim();
+  const note='';
   if(!name||!addr){sErr();toast('名前と住所を入力してください');return;}
   const fid=document.getElementById('fFolder').value;
   const np={name,addr,note};if(formIcon)np.icon=formIcon;
