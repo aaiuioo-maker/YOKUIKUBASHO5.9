@@ -72,14 +72,14 @@ body{position:fixed;inset:0;width:100%}
   border-bottom:.5px solid var(--app-border);
 }
 .sec-lbl{font-size:11px;font-weight:600;color:var(--app-hint);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;padding:0 2px}
-.map-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
+.map-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px}
 .map-btn{
   background:var(--app-surface);border:.5px solid var(--app-border);
-  border-radius:10px;padding:6px 8px;cursor:pointer;
-  display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;-webkit-appearance:none;
+  border-radius:10px;padding:6px 4px;cursor:pointer;min-width:0;
+  display:flex;flex-direction:row;align-items:center;justify-content:center;gap:4px;-webkit-appearance:none;
 }
-.map-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center}
-.map-name{font-size:12px;font-weight:600;color:var(--app-text)}
+.map-icon{width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.map-name{font-size:11px;font-weight:600;color:var(--app-text);white-space:nowrap}
 .map-desc{display:none}
 .map-hint{font-size:11px;color:var(--app-hint);text-align:center}
 
@@ -128,6 +128,25 @@ body{position:fixed;inset:0;width:100%}
   border-radius:12px;padding:11px;font-size:13px;font-weight:500;color:var(--app-blue);
   cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;-webkit-appearance:none;
 }
+
+/* フォルダ */
+.fd-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.fd{background:var(--app-surface);border-radius:12px;border:.5px solid var(--app-border);overflow:hidden}
+.fd-head{display:flex;align-items:center;gap:11px;padding:10px 12px;cursor:pointer}
+.fd-ic{width:40px;height:40px;border-radius:10px;background:#fff3d1;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0}
+.fd-name{flex:1;min-width:0;font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fd-cnt{font-size:12px;color:var(--app-sub);background:#f0f0f0;border-radius:10px;padding:2px 8px;flex-shrink:0}
+.fd-chev{font-size:22px;color:#bbb;width:22px;text-align:center;flex-shrink:0;transition:transform .2s}
+.fd.open .fd-chev{transform:rotate(90deg)}
+.fd-body{display:none;border-top:.5px solid var(--app-border);padding:10px;background:var(--app-bg)}
+.fd.open .fd-body{display:block}
+.fd-body .place-list{margin-bottom:8px}
+.fd-body .empty-card{padding:16px;margin-bottom:8px}
+.fd-acts{display:flex;gap:8px}
+.fd-acts .add-btn{flex:1}
+.fd-del{border:none;background:#ffeeee;color:var(--app-red);border-radius:12px;padding:0 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;flex-shrink:0}
+.ff select,.det-sel{width:100%;border:none;outline:none;font-size:16px;color:var(--app-text);padding:5px 0 9px;background:transparent;font-family:inherit}
+.det-sel{padding:0;font-size:14px;color:var(--app-blue)}
 
 /* form */
 .form-card{background:var(--app-surface);border-radius:12px;overflow:hidden;margin-top:8px;border:.5px solid var(--app-border);display:none}
@@ -179,7 +198,8 @@ body{position:fixed;inset:0;width:100%}
 .det-row:last-child{border-bottom:none}
 .det-key{font-size:11px;font-weight:600;color:var(--app-hint);text-transform:uppercase;letter-spacing:.06em;min-width:44px;padding-top:2px}
 .det-val{font-size:14px;color:var(--app-text);flex:1;line-height:1.5}
-.det-map-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.det-map-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px}
+.det-map-row .sh-btn{padding:12px 2px;font-size:13px;white-space:nowrap}
 
 /* 追加シート：上から出す（キーボードに隠れない） */
 .overlay.top{align-items:flex-start}
@@ -277,7 +297,7 @@ body{position:fixed;inset:0;width:100%}
             <path d="M10 2C7.24 2 5 4.24 5 7c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" fill="#1a7fd4"/>
           </svg>
         </div>
-        <div class="map-name">Apple マップ</div>
+        <div class="map-name">Appleマップ</div>
         <div class="map-desc">純正で開く</div>
       </button>
       <button class="map-btn ripple-host" onclick="openMap('google')">
@@ -286,8 +306,17 @@ body{position:fixed;inset:0;width:100%}
             <path d="M10 2C7.24 2 5 4.24 5 7c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" fill="#ea4335"/>
           </svg>
         </div>
-        <div class="map-name">Google マップ</div>
+        <div class="map-name">Googleマップ</div>
         <div class="map-desc">Googleで開く</div>
+      </button>
+      <button class="map-btn ripple-host" onclick="openMap('yahoo')">
+        <div class="map-icon" style="background:#f6eefe">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+            <path d="M10 2C7.24 2 5 4.24 5 7c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" fill="#7b2fd0"/>
+          </svg>
+        </div>
+        <div class="map-name">Yahoo!マップ</div>
+        <div class="map-desc">Yahoo!で開く</div>
       </button>
     </div>
     <div class="map-hint" id="mapHint">場所をタップして選択してください</div>
@@ -296,12 +325,18 @@ body{position:fixed;inset:0;width:100%}
   <!-- スクロール領域 -->
   <div class="scroll-area" id="scrollArea">
     <div class="sec">
-      <div class="sec-lbl">登録地点</div>
+      <div class="sec-lbl">よく行く場所</div>
       <div id="placeList"></div>
-      <button class="add-btn ripple-host" onclick="toggleForm()">
+      <button class="add-btn ripple-host" onclick="toggleForm('')">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         場所を追加
       </button>
+    </div>
+
+    <div class="sec" style="margin-top:22px">
+      <div class="sec-lbl">フォルダ</div>
+      <div id="folderList"></div>
+      <button class="add-btn ripple-host" onclick="openFolderForm()">📁 フォルダを作る</button>
     </div>
 
     <div class="sec" style="margin-top:18px">
@@ -331,6 +366,10 @@ body{position:fixed;inset:0;width:100%}
           <label>メモ（任意）</label>
           <input id="fNote" type="text" placeholder="例：集荷ルートA">
         </div>
+        <div class="ff">
+          <label>入れる場所</label>
+          <select id="fFolder"></select>
+        </div>
         <div class="ff ic-row" onclick="openPicker('form')">
           <label>アイコン</label>
           <div class="ic-row-body"><span class="ic-cur" id="fIconCur">📍</span><span class="ic-row-txt" id="fIconTxt">おまかせ（名前から自動）</span><span class="ic-row-arr">変更 ›</span></div>
@@ -340,6 +379,34 @@ body{position:fixed;inset:0;width:100%}
           <button class="fbtn ok ripple-host" onclick="addPlace()">登録</button>
         </div>
       </div>
+</div>
+
+<!-- フォルダを作るシート（画面の上に出す） -->
+<div class="overlay top" id="folderForm">
+  <div class="add-sheet">
+    <div class="add-title">フォルダを作る</div>
+    <div class="ff">
+      <label>フォルダの名前</label>
+      <input id="fdName" type="text" placeholder="例：月曜の集荷ルート">
+    </div>
+    <div class="form-acts">
+      <button class="fbtn ripple-host" onclick="closeFolderForm()">キャンセル</button>
+      <button class="fbtn ok ripple-host" onclick="addFolder()">作る</button>
+    </div>
+  </div>
+</div>
+
+<!-- 削除の確認シート -->
+<div class="overlay" id="confirmModal">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="cfTitle"></div>
+    <div class="sh-sub" id="cfSub"></div>
+    <div class="sh-btns">
+      <button class="sh-btn red ripple-host" onclick="confirmYes()">削除する</button>
+      <button class="sh-btn gray ripple-host" onclick="closeConfirm()">キャンセル</button>
+    </div>
+  </div>
 </div>
 
 <!-- アイコン選択シート -->
@@ -375,10 +442,15 @@ body{position:fixed;inset:0;width:100%}
         <div class="det-key">メモ</div>
         <div class="det-val" id="detNote"></div>
       </div>
+      <div class="det-row">
+        <div class="det-key">入れ先</div>
+        <div class="det-val"><select class="det-sel" id="detFolder" onchange="moveFolder(this.value)"></select></div>
+      </div>
     </div>
     <div class="det-map-row">
-      <button class="sh-btn blue ripple-host" onclick="openMapDirect('apple')">Apple マップで開く</button>
-      <button class="sh-btn blue ripple-host" style="background:#ea4335" onclick="openMapDirect('google')">Google マップで開く</button>
+      <button class="sh-btn blue ripple-host" onclick="openMapDirect('apple')">Appleマップ</button>
+      <button class="sh-btn blue ripple-host" style="background:#ea4335" onclick="openMapDirect('google')">Googleマップ</button>
+      <button class="sh-btn blue ripple-host" style="background:#7b2fd0" onclick="openMapDirect('yahoo')">Yahoo!マップ</button>
     </div>
     <div class="sh-btns">
       <button class="sh-btn red ripple-host" onclick="delFromDetail()">この場所を削除</button>
@@ -472,6 +544,18 @@ if(!localStorage.getItem('map_places_sample_removed')){
   save();localStorage.setItem('map_places_sample_removed','1');
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(places))}
+
+/* フォルダ：{id,name}。場所は p.folder にフォルダの id を持つ（無ければ「よく行く場所」） */
+const FKEY='map_folders_v1',FOPEN='map_folders_open';
+let folders=[],openFolders=[];
+try{folders=JSON.parse(localStorage.getItem(FKEY)||'[]')||[]}catch(_){folders=[]}
+try{openFolders=JSON.parse(localStorage.getItem(FOPEN)||'[]')||[]}catch(_){openFolders=[]}
+function saveFolders(){localStorage.setItem(FKEY,JSON.stringify(folders))}
+function saveOpen(){try{localStorage.setItem(FOPEN,JSON.stringify(openFolders))}catch(_){}}
+function folderOf(p){return p.folder&&folders.some(f=>f.id===p.folder)?p.folder:''}
+function folderOptions(){
+  return '<option value="">なし（よく行く場所）</option>'+folders.map(f=>`<option value="${esc(f.id)}">📁 ${esc(f.name)}</option>`).join('');
+}
 
 function toast(msg){
   const el=document.getElementById('toast');
@@ -590,15 +674,10 @@ document.getElementById('pickerModal').addEventListener('click',function(e){if(e
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
 /* ── Render ── */
-function render(){
-  const ul=document.getElementById('placeList');
-  if(!places.length){
-    ul.innerHTML='<div class="empty-card">まだ場所が登録されていません</div>';
-    updateMapHint();return;
-  }
-  ul.innerHTML='<div class="place-list">'+places.map((p,i)=>`
+function rowsHTML(list){
+  return '<div class="place-list">'+list.map(([p,i])=>`
     <div class="pi${sel===i?' sel':''} ripple-host" data-i="${i}" onclick="selectPlace(${i})">
-      <span class="pi-handle" data-i="${i}" onclick="event.stopPropagation()">≡</span>
+      <span class="pi-handle" onclick="event.stopPropagation()">≡</span>
       <div class="pi-icon">${iconHTML(emoji(p))}</div>
       <div class="pi-body">
         <div class="pi-name">${esc(p.name)}${p.note?`<span class="pi-note">${esc(p.note)}</span>`:''}</div>
@@ -607,8 +686,88 @@ function render(){
       <span class="pi-arr" onclick="event.stopPropagation();openDetail(${i})">›</span>
     </div>
   `).join('')+'</div>';
+}
+function render(){
+  const all=places.map((p,i)=>[p,i]);
+  // よく行く場所（フォルダに入っていないもの）は常に表示
+  const top=all.filter(([p])=>!folderOf(p));
+  document.getElementById('placeList').innerHTML=top.length?rowsHTML(top)
+    :`<div class="empty-card">${places.length?'フォルダに入っていない場所はありません':'まだ場所が登録されていません'}</div>`;
+  // フォルダ：タップで開いて中身を見る
+  document.getElementById('folderList').innerHTML=folders.length?'<div class="fd-list">'+folders.map((f,fi)=>{
+    const items=all.filter(([p])=>p.folder===f.id);
+    const open=openFolders.includes(f.id);
+    return `<div class="fd${open?' open':''}">
+      <div class="fd-head ripple-host" onclick="toggleFolder(${fi})">
+        <div class="fd-ic">${open?'📂':'📁'}</div>
+        <div class="fd-name">${esc(f.name)}</div>
+        <span class="fd-cnt">${items.length}件</span>
+        <span class="fd-chev">›</span>
+      </div>
+      <div class="fd-body">
+        ${items.length?rowsHTML(items):'<div class="empty-card">まだ場所が入っていません</div>'}
+        <div class="fd-acts">
+          <button class="add-btn ripple-host" onclick="toggleForm(folders[${fi}].id)">＋ このフォルダに追加</button>
+          <button class="fd-del ripple-host" onclick="askDelFolder(${fi})">削除</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('')+'</div>':'<div class="empty-card">フォルダはまだありません<br>仕事の日に回る場所などをまとめておけます</div>';
   updateMapHint();
 }
+
+/* ── Folders ── */
+function toggleFolder(fi){
+  const id=folders[fi].id;
+  if(openFolders.includes(id)){openFolders=openFolders.filter(x=>x!==id);sClose();}
+  else{openFolders.push(id);sSelect();}
+  saveOpen();render();
+}
+function openFolderForm(){
+  document.getElementById('fdName').value='';
+  document.getElementById('folderForm').classList.add('show');
+  document.getElementById('fdName').focus();
+  sSelect();
+}
+function closeFolderForm(){
+  document.getElementById('folderForm').classList.remove('show');
+  document.activeElement&&document.activeElement.blur();
+  sClose();
+}
+document.getElementById('folderForm').addEventListener('click',function(e){if(e.target===this)closeFolderForm();});
+document.getElementById('fdName').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing)addFolder();});
+function addFolder(){
+  const name=document.getElementById('fdName').value.trim();
+  if(!name){sErr();toast('フォルダの名前を入力してください');return;}
+  const id='f'+Date.now().toString(36);
+  folders.push({id,name});openFolders.push(id);
+  saveFolders();saveOpen();render();
+  closeFolderForm();sAdd();toast('📁 '+name+' を作りました');
+}
+let confirmFn=null;
+function askDelFolder(fi){
+  const f=folders[fi];
+  const n=places.filter(p=>p.folder===f.id).length;
+  document.getElementById('cfTitle').textContent='フォルダ「'+f.name+'」を削除しますか？';
+  document.getElementById('cfSub').textContent=n?'中に入っている '+n+' 件の場所も一緒に削除されます。':'中に場所は入っていません。';
+  confirmFn=()=>{
+    const cur=sel>=0?places[sel]:null;
+    places=places.filter(p=>p.folder!==f.id);
+    folders=folders.filter(x=>x.id!==f.id);
+    openFolders=openFolders.filter(x=>x!==f.id);
+    sel=cur?places.indexOf(cur):-1;
+    save();saveFolders();saveOpen();render();
+    sDel();toast('📁 '+f.name+' を削除しました');
+  };
+  document.getElementById('confirmModal').classList.add('show');
+  sSelect();
+}
+function confirmYes(){const fn=confirmFn;closeConfirm(true);fn&&fn();}
+function closeConfirm(quiet){
+  document.getElementById('confirmModal').classList.remove('show');
+  confirmFn=null;if(!quiet)sClose();
+}
+document.getElementById('confirmModal').addEventListener('click',function(e){if(e.target===this)closeConfirm();});
 
 function updateMapHint(){
   const hint=document.getElementById('mapHint');
@@ -637,12 +796,14 @@ function dragStart(e){
   const hd=e.target.closest('.pi-handle');
   if(!hd||drag)return;
   e.preventDefault();e.stopPropagation();
-  const i=+hd.dataset.i;
-  const rows=[...document.querySelectorAll('#placeList .pi')];
-  const row=rows[i];
+  // 並べ替えは同じリスト（よく行く場所／各フォルダ）の中だけ
+  const row=hd.closest('.pi');
+  const rows=[...row.parentNode.querySelectorAll(':scope > .pi')];
+  const i=rows.indexOf(row);
+  const g=rows.map(r=>+r.dataset.i);
   const mids=rows.map(r=>{const b=r.getBoundingClientRect();return b.top+b.height/2});
   const rb=row.getBoundingClientRect();
-  drag={i,to:i,startY:evY(e),rows,row,mids,h:rb.height+1,grab:evY(e)-(rb.top+rb.height/2)};
+  drag={i,to:i,g,startY:evY(e),rows,row,mids,h:rb.height+1,grab:evY(e)-(rb.top+rb.height/2)};
   row.parentNode.classList.add('drag-on');
   row.classList.add('dragging');
   rows.forEach(r=>{if(r!==row)r.classList.add('shifting')});
@@ -670,19 +831,22 @@ function dragMove(e){
 }
 function dragEnd(){
   if(!drag)return;
-  const {i,to}=drag;
+  const {i,to,g}=drag;
   drag=null;dragEndAt=Date.now();
   if(to!==i){
     const cur=sel>=0?places[sel]:null;
-    const [m]=places.splice(i,1);
-    places.splice(to,0,m);
+    // このリストの場所だけを並べ替えて、元の位置に戻す
+    const items=g.map(k=>places[k]);
+    const [m]=items.splice(i,1);
+    items.splice(to,0,m);
+    g.forEach((k,j)=>{places[k]=items[j]});
     sel=cur?places.indexOf(cur):-1;
     save();sAdd();
   }
   render();
 }
 (function(){
-  const list=document.getElementById('placeList');
+  const list=document.getElementById('scrollArea');
   // iPhone：タッチイベントで直接受け取る（スクロールを止めるため passive:false）
   list.addEventListener('touchstart',dragStart,{passive:false});
   document.addEventListener('touchmove',dragMove,{passive:false});
@@ -706,6 +870,8 @@ function openDetail(i){
   const nv=document.getElementById('detNote');
   if(p.note){nv.textContent=p.note;nr.style.display='flex';}
   else{nr.style.display='none';}
+  const ds=document.getElementById('detFolder');
+  ds.innerHTML=folderOptions();ds.value=folderOf(p);
   document.getElementById('detailModal').classList.add('show');
   sSelect();
 }
@@ -720,30 +886,42 @@ function delFromDetail(){
   if(sel===detIdx)sel=-1;else if(sel>detIdx)sel--;
   save();render();closeDetail();sDel();toast(n+' を削除しました');
 }
-function openMapDirect(type){
+function moveFolder(fid){
   if(detIdx<0)return;
-  const q=encodeURIComponent(places[detIdx].addr||places[detIdx].name);
+  const p=places[detIdx];
+  if(fid){p.folder=fid;if(!openFolders.includes(fid)){openFolders.push(fid);saveOpen();}}
+  else delete p.folder;
+  save();render();sAdd();
+  const f=folders.find(x=>x.id===fid);
+  toast(f?'📁 '+f.name+' に入れました':'よく行く場所に戻しました');
+}
+function goMap(type,p){
+  const q=encodeURIComponent(p.addr||p.name);
   sOpen();
   if(type==='apple'){window.location.href='maps://?q='+q;setTimeout(()=>window.location.href='https://maps.apple.com/?q='+q,400);}
-  else{window.location.href='comgooglemaps://?daddr='+q+'&directionsmode=driving';setTimeout(()=>window.location.href='https://maps.google.com/?q='+q,400);}
+  else if(type==='google'){window.location.href='comgooglemaps://?daddr='+q+'&directionsmode=driving';setTimeout(()=>window.location.href='https://maps.google.com/?q='+q,400);}
+  else{window.location.href='https://map.yahoo.co.jp/search?q='+q;}
+}
+function openMapDirect(type){
+  if(detIdx<0)return;
+  goMap(type,places[detIdx]);
 }
 document.getElementById('detailModal').addEventListener('click',function(e){if(e.target===this){closeDetail();}});
 
 /* ── Map buttons ── */
 function openMap(type){
   if(sel<0||sel>=places.length){sErr();toast('リストから場所をタップして選んでください');return;}
-  const q=encodeURIComponent(places[sel].addr||places[sel].name);
-  sOpen();
-  if(type==='apple'){window.location.href='maps://?q='+q;setTimeout(()=>window.location.href='https://maps.apple.com/?q='+q,400);}
-  else{window.location.href='comgooglemaps://?daddr='+q+'&directionsmode=driving';setTimeout(()=>window.location.href='https://maps.google.com/?q='+q,400);}
+  goMap(type,places[sel]);
 }
 
 /* ── Form ── */
-function toggleForm(){
+function toggleForm(fid){
   const f=document.getElementById('formCard');
   f.classList.toggle('show');
   if(f.classList.contains('show')){
     ['fName','fAddr','fNote'].forEach(id=>document.getElementById(id).value='');
+    const fs=document.getElementById('fFolder');
+    fs.innerHTML=folderOptions();fs.value=fid||'';
     formIcon='';updateFormIcon();
     document.getElementById('fName').focus();
     sSelect();
@@ -758,7 +936,9 @@ function addPlace(){
   const addr=document.getElementById('fAddr').value.trim();
   const note=document.getElementById('fNote').value.trim();
   if(!name||!addr){sErr();toast('名前と住所を入力してください');return;}
+  const fid=document.getElementById('fFolder').value;
   const np={name,addr,note};if(formIcon)np.icon=formIcon;
+  if(fid){np.folder=fid;if(!openFolders.includes(fid)){openFolders.push(fid);saveOpen();}}
   places.push(np);
   save();sel=places.length-1;render();
   toggleForm();sAdd();toast(name+' を登録しました');
@@ -768,8 +948,8 @@ function addPlace(){
 let pendingRestore=null;
 function exportBackup(){
   const latest=JSON.parse(localStorage.getItem(KEY)||'[]');
-  if(!latest.length){sErr();toast('登録されている場所がありません');return;}
-  const json=JSON.stringify({version:2,exportedAt:new Date().toISOString(),count:latest.length,places:latest},null,2);
+  if(!latest.length&&!folders.length){sErr();toast('登録されている場所がありません');return;}
+  const json=JSON.stringify({version:3,exportedAt:new Date().toISOString(),count:latest.length,places:latest,folders},null,2);
   const date=new Date().toISOString().slice(0,10).replace(/-/g,'');
   const fname='map_places_'+date+'.json';
   try{
@@ -791,9 +971,10 @@ function importBackup(e){
     try{
       const raw=JSON.parse(ev.target.result);
       const loaded=Array.isArray(raw)?raw:(raw.places&&Array.isArray(raw.places)?raw.places:null);
-      if(!loaded||!loaded.length||typeof loaded[0].name!=='string')throw 0;
-      pendingRestore=loaded;
-      document.getElementById('restoreSub').textContent=file.name+'\n'+loaded.length+'件が見つかりました。現在の'+places.length+'件は上書きされます。';
+      const lf=(!Array.isArray(raw)&&Array.isArray(raw.folders))?raw.folders.filter(f=>f&&typeof f.id==='string'&&typeof f.name==='string'):[];
+      if(!loaded||(!loaded.length&&!lf.length)||(loaded.length&&typeof loaded[0].name!=='string'))throw 0;
+      pendingRestore={places:loaded,folders:lf};
+      document.getElementById('restoreSub').textContent=file.name+'\n'+loaded.length+'件'+(lf.length?'（フォルダ'+lf.length+'個）':'')+'が見つかりました。現在の'+places.length+'件は上書きされます。';
       document.getElementById('restorePreview').textContent=loaded.slice(0,6).map(p=>'・'+p.name+' — '+p.addr).join('\n')+(loaded.length>6?'\n…他'+(loaded.length-6)+'件':'');
       document.getElementById('restoreModal').classList.add('show');
       sSelect();
@@ -804,8 +985,9 @@ function importBackup(e){
 }
 function confirmRestore(){
   if(!pendingRestore)return;
-  places=pendingRestore;pendingRestore=null;
-  sel=-1;save();render();closeRestore();
+  places=pendingRestore.places;folders=pendingRestore.folders;pendingRestore=null;
+  openFolders=openFolders.filter(id=>folders.some(f=>f.id===id));
+  sel=-1;save();saveFolders();saveOpen();render();closeRestore();
   sFanfare();toast(places.length+'件を復元しました');
 }
 function closeRestore(){
