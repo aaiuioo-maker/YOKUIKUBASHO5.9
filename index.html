@@ -152,6 +152,25 @@ body{position:fixed;inset:0;width:100%}
 .fd-body .place-list{margin-bottom:8px}
 .fd-body .empty-card{padding:16px;margin-bottom:8px}
 .fd-acts{display:flex;gap:8px}
+.fd-tools{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.fd-tool{border:none;border-radius:12px;padding:11px 6px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;background:#eef4ff;color:var(--app-blue)}
+.fd-tool.route{background:#fef0ee;color:#d93025}
+
+/* フォルダの場所をまとめて表示する地図 */
+#mapView{position:fixed;inset:0;z-index:350;background:var(--app-bg);display:none;flex-direction:column;font-family:-apple-system,'Helvetica Neue',sans-serif}
+#mapView.show{display:flex}
+.mv-hdr{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px 16px;background:var(--app-surface);border-bottom:.5px solid var(--app-border)}
+.mv-ttl{flex:1;min-width:0}
+.mv-title{font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mv-sub{font-size:12px;color:var(--app-sub);margin-top:1px}
+.mv-close{border:none;background:#f0f0f0;color:#333;border-radius:10px;padding:9px 16px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;flex-shrink:0}
+#mvMap{flex:1;min-height:0;background:#e8e8e8}
+.mv-pin{width:30px;height:30px;border-radius:50%;background:var(--app-blue);color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.mv-pop{font-family:-apple-system,'Helvetica Neue',sans-serif;min-width:180px}
+.mv-pop b{font-size:14px}
+.mv-pop .addr{font-size:12px;color:#666;margin:2px 0 8px}
+.mv-pop-btns{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.mv-pop-btns button{border:none;border-radius:8px;padding:8px 4px;font-size:12px;font-weight:600;color:#fff;font-family:inherit;cursor:pointer}
 .fd-acts .add-btn{flex:1}
 .fd-del{border:none;background:#ffeeee;color:var(--app-red);border-radius:12px;padding:0 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;flex-shrink:0}
 .ff select,.det-sel{width:100%;border:none;outline:none;font-size:16px;color:var(--app-text);padding:5px 0 9px;background:transparent;font-family:inherit}
@@ -411,6 +430,18 @@ body{position:fixed;inset:0;width:100%}
       <button class="fbtn ok ripple-host" onclick="addFolder()">作る</button>
     </div>
   </div>
+</div>
+
+<!-- フォルダの場所をまとめて表示する地図 -->
+<div id="mapView">
+  <div class="mv-hdr">
+    <div class="mv-ttl">
+      <div class="mv-title" id="mvTitle"></div>
+      <div class="mv-sub" id="mvSub"></div>
+    </div>
+    <button class="mv-close ripple-host" onclick="closeFolderMap()">閉じる</button>
+  </div>
+  <div id="mvMap"></div>
 </div>
 
 <!-- 削除の確認シート -->
@@ -733,7 +764,10 @@ function render(){
         <span class="fd-chev">›</span>
       </div>
       <div class="fd-body">
-        ${items.length?rowsHTML(items):'<div class="empty-card">まだ場所が入っていません</div>'}
+        ${items.length?`<div class="fd-tools">
+          <button class="fd-tool ripple-host" onclick="openFolderMap(${fi})">🗺️ 地図で全部見る</button>
+          <button class="fd-tool route ripple-host" onclick="routeFolder(${fi})">🚗 Googleでルート</button>
+        </div>`+rowsHTML(items):'<div class="empty-card">まだ場所が入っていません</div>'}
         <div class="fd-acts">
           <button class="add-btn ripple-host" onclick="toggleForm(folders[${fi}].id)">＋ このフォルダに追加</button>
           <button class="fd-del ripple-host" onclick="askDelFolder(${fi})">削除</button>
@@ -989,10 +1023,111 @@ function goMap(type,p){
   }
   sOpen();
   // まずアプリで開き、アプリが無くて画面に残っていたらWeb版を開く
-  const tryApp=(app,web)=>{window.location.href=app;setTimeout(()=>{if(!document.hidden)window.location.href=web;},700);};
   if(type==='apple')tryApp('maps://?q='+q,'https://maps.apple.com/?q='+q);
   else if(type==='google')tryApp('comgooglemaps://?daddr='+q+'&directionsmode=driving','https://maps.google.com/?q='+q);
   else tryApp('yjmap://search/?lat=34.99&lon=135.78&zoom=15&query='+q,'https://map.yahoo.co.jp/search?q='+q);
+}
+// まずアプリで開き、アプリが無くて画面に残っていたらWeb版を開く
+function tryApp(app,web){
+  window.location.href=app;
+  setTimeout(()=>{if(!document.hidden)window.location.href=web;},700);
+}
+
+/* ── フォルダの場所をまとめて地図に ── */
+function folderPlaces(fi){const id=folders[fi].id;return places.filter(p=>p.folder===id);}
+
+// Google マップで、フォルダの場所を上から順に回るルートを開く（出発は現在地）
+function routeFolder(fi){
+  const ps=folderPlaces(fi);
+  if(!ps.length){sErr();toast('場所が入っていません');return;}
+  let list=ps.map(p=>p.addr||p.name);
+  if(list.length>10){list=list.slice(0,10);toast('最初の10か所でルートを作ります');}
+  const enc=list.map(encodeURIComponent);
+  const dest=enc[enc.length-1],wp=enc.slice(0,-1);
+  const web='https://www.google.com/maps/dir/?api=1&travelmode=driving&destination='+dest+(wp.length?'&waypoints='+wp.join('%7C'):'');
+  sOpen();
+  tryApp('comgooglemaps://?daddr='+enc.join('+to:')+'&directionsmode=driving',web);
+}
+
+// アプリの中に地図を出して、フォルダの場所に番号付きのピンを立てる
+let leafletP=null,mvMap=null,mvLayer=null,mvList=[],mvToken=0;
+function loadLeaflet(){
+  if(window.L)return Promise.resolve();
+  if(leafletP)return leafletP;
+  leafletP=new Promise((res,rej)=>{
+    const css=document.createElement('link');
+    css.rel='stylesheet';css.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+    document.head.appendChild(css);
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+    s.onload=res;s.onerror=()=>{leafletP=null;rej();};
+    document.head.appendChild(s);
+  });
+  return leafletP;
+}
+// 住所から位置を探す（国土地理院）。一度探した位置は場所に覚えておく
+async function geocode(p){
+  const a=p.addr||p.name;
+  if(p.geo&&p.geo.q===a)return p.geo;
+  const r=await fetch('https://msearch.gsi.go.jp/address-search/AddressSearch?q='+encodeURIComponent(a));
+  const j=await r.json();
+  if(!Array.isArray(j)||!j.length)return null;
+  const [lon,lat]=j[0].geometry.coordinates;
+  p.geo={q:a,lat,lon};
+  return p.geo;
+}
+function popupHTML(k){
+  const p=mvList[k];
+  return `<div class="mv-pop"><b>${k+1}. ${esc(p.name)}</b><div class="addr">${esc(p.addr||'')}</div>
+    <div class="mv-pop-btns">
+      <button style="background:#1a6ed8" onclick="goMap('apple',mvList[${k}])">Apple</button>
+      <button style="background:#ea4335" onclick="goMap('google',mvList[${k}])">Google</button>
+      <button style="background:#7b2fd0" onclick="goMap('yahoo',mvList[${k}])">Yahoo!</button>
+      <button style="background:#e8790c" onclick="goMap('copy',mvList[${k}])">住所コピー</button>
+    </div></div>`;
+}
+async function openFolderMap(fi){
+  const f=folders[fi],ps=folderPlaces(fi);
+  if(!ps.length){sErr();toast('場所が入っていません');return;}
+  const token=++mvToken;
+  const sub=document.getElementById('mvSub');
+  document.getElementById('mvTitle').textContent=f.name;
+  sub.textContent='地図を読み込み中…';
+  document.getElementById('mapView').classList.add('show');
+  sOpen();
+  try{await loadLeaflet();}
+  catch(_){sub.textContent='地図を読み込めませんでした。電波を確認してください';return;}
+  if(token!==mvToken)return;
+  if(!mvMap){
+    mvMap=L.map('mvMap').setView([34.99,135.78],12);
+    L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',{
+      maxZoom:18,attribution:'<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a>'
+    }).addTo(mvMap);
+  }
+  if(mvLayer)mvLayer.remove();
+  mvLayer=L.layerGroup().addTo(mvMap);
+  mvMap.invalidateSize();
+  mvList=ps;
+  sub.textContent='場所を探しています…';
+  const found=await Promise.all(ps.map(p=>geocode(p).catch(()=>null)));
+  if(token!==mvToken)return;
+  save();
+  const pts=[],miss=[];
+  found.forEach((g,k)=>{
+    if(!g){miss.push(ps[k].name);return;}
+    L.marker([g.lat,g.lon],{icon:L.divIcon({className:'',html:`<div class="mv-pin">${k+1}</div>`,iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-15]})})
+      .bindPopup(popupHTML(k)).addTo(mvLayer);
+    pts.push([g.lat,g.lon]);
+  });
+  mvMap.invalidateSize();
+  if(pts.length===1)mvMap.setView(pts[0],16);
+  else if(pts.length)mvMap.fitBounds(pts,{padding:[40,40],maxZoom:17});
+  sub.textContent=pts.length+'か所'+(miss.length?'（見つからない：'+miss.join('、')+'）':'　ピンを押すと地図アプリで開けます');
+}
+function closeFolderMap(){
+  mvToken++;
+  document.getElementById('mapView').classList.remove('show');
+  sClose();
 }
 function copyText(s){
   const fallback=()=>{
