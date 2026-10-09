@@ -155,6 +155,8 @@ body{position:fixed;inset:0;width:100%}
 .fd-tools{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .fd-tool{border:none;border-radius:12px;padding:11px 6px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;background:#eef4ff;color:var(--app-blue)}
 .fd-tool.route{background:#fef0ee;color:#d93025}
+.fd-tool.apple{background:#eaf3fc;color:#1a7fd4}
+.fd-tools .fd-tool:first-child{grid-column:1/-1}
 
 /* フォルダの場所をまとめて表示する地図 */
 #mapView{position:fixed;inset:0;z-index:350;background:var(--app-bg);display:none;flex-direction:column;font-family:-apple-system,'Helvetica Neue',sans-serif}
@@ -393,7 +395,7 @@ body{position:fixed;inset:0;width:100%}
 <!-- 追加シート（画面の上に出す） -->
 <div class="overlay top" id="formCard">
       <div class="add-sheet">
-        <div class="add-title">場所を追加</div>
+        <div class="add-title" id="formTitle">場所を追加</div>
         <div class="ff">
           <label>場所の名前</label>
           <input id="fName" type="text" oninput="updateFormIcon()" placeholder="例：京都中央郵便局">
@@ -412,7 +414,7 @@ body{position:fixed;inset:0;width:100%}
         </div>
         <div class="form-acts">
           <button class="fbtn ripple-host" onclick="toggleForm()">キャンセル</button>
-          <button class="fbtn ok ripple-host" onclick="addPlace()">登録</button>
+          <button class="fbtn ok ripple-host" id="formOk" onclick="addPlace()">登録</button>
         </div>
       </div>
 </div>
@@ -502,6 +504,7 @@ body{position:fixed;inset:0;width:100%}
       <button class="sh-btn blue ripple-host" style="background:#e8790c" onclick="openMapDirect('copy')">住所をコピー</button>
     </div>
     <div class="sh-btns">
+      <button class="sh-btn gray ripple-host" style="color:var(--app-blue)" onclick="editFromDetail()">名前・住所を編集</button>
       <button class="sh-btn red ripple-host" onclick="delFromDetail()">この場所を削除</button>
       <button class="sh-btn gray ripple-host" onclick="closeDetail()">閉じる</button>
     </div>
@@ -766,7 +769,8 @@ function render(){
       <div class="fd-body">
         ${items.length?`<div class="fd-tools">
           <button class="fd-tool ripple-host" onclick="openFolderMap(${fi})">🗺️ 地図で全部見る</button>
-          <button class="fd-tool route ripple-host" onclick="routeFolder(${fi})">🚗 Googleでルート</button>
+          <button class="fd-tool route ripple-host" onclick="routeFolder(${fi},'google')">🚗 Googleでルート</button>
+          <button class="fd-tool apple ripple-host" onclick="routeFolder(${fi},'apple')">🚗 Appleでルート</button>
         </div>`+rowsHTML(items):'<div class="empty-card">まだ場所が入っていません</div>'}
         <div class="fd-acts">
           <button class="add-btn ripple-host" onclick="toggleForm(folders[${fi}].id)">＋ このフォルダに追加</button>
@@ -1036,16 +1040,22 @@ function tryApp(app,web){
 /* ── フォルダの場所をまとめて地図に ── */
 function folderPlaces(fi){const id=folders[fi].id;return places.filter(p=>p.folder===id);}
 
-// Google マップで、フォルダの場所を上から順に回るルートを開く（出発は現在地）
-function routeFolder(fi){
+// フォルダの場所を上から順に回るルートを開く（出発は現在地）
+//   Google：経由地は10か所まで／Apple 純正：iOS 18.4 以降の新しい地図リンクで14か所まで
+function routeFolder(fi,kind){
   const ps=folderPlaces(fi);
   if(!ps.length){sErr();toast('場所が入っていません');return;}
+  const max=kind==='apple'?14:10;
   let list=ps.map(p=>p.addr||p.name);
-  if(list.length>10){list=list.slice(0,10);toast('最初の10か所でルートを作ります');}
+  if(list.length>max){list=list.slice(0,max);toast('最初の'+max+'か所でルートを作ります');}
   const enc=list.map(encodeURIComponent);
   const dest=enc[enc.length-1],wp=enc.slice(0,-1);
-  const web='https://www.google.com/maps/dir/?api=1&travelmode=driving&destination='+dest+(wp.length?'&waypoints='+wp.join('%7C'):'');
   sOpen();
+  if(kind==='apple'){
+    window.location.href='https://maps.apple.com/directions?mode=driving&destination='+dest+wp.map(w=>'&waypoint='+w).join('');
+    return;
+  }
+  const web='https://www.google.com/maps/dir/?api=1&travelmode=driving&destination='+dest+(wp.length?'&waypoints='+wp.join('%7C'):'');
   tryApp('comgooglemaps://?daddr='+enc.join('+to:')+'&directionsmode=driving',web);
 }
 
@@ -1066,15 +1076,28 @@ function loadLeaflet(){
   return leafletP;
 }
 // 住所から位置を探す（国土地理院）。一度探した位置は場所に覚えておく
+// 郵便番号（〒600-8216 など）や「日本、」は位置探しのじゃまになるので外す
+function cleanAddr(a){
+  return a.replace(/^[\s　]*〒?[\s　]*[0-9０-９]{3}[\s　]*[-－ー‐−―]?[\s　]*[0-9０-９]{4}[\s　、,]*/,'')
+          .replace(/^[\s　]*日本(国)?[\s　、,]*/,'').trim();
+}
 async function geocode(p){
-  const a=p.addr||p.name;
+  const a=cleanAddr(p.addr||p.name);
   if(p.geo&&p.geo.q===a)return p.geo;
-  const r=await fetch('https://msearch.gsi.go.jp/address-search/AddressSearch?q='+encodeURIComponent(a));
-  const j=await r.json();
-  if(!Array.isArray(j)||!j.length)return null;
-  const [lon,lat]=j[0].geometry.coordinates;
-  p.geo={q:a,lat,lon};
-  return p.geo;
+  // 見つからなければ、空白の後ろ（建物名など）を外してもう一度探す
+  const tries=[a];
+  const head=a.split(/[\s　]+/)[0];
+  if(head&&head!==a)tries.push(head);
+  for(const q of tries){
+    const r=await fetch('https://msearch.gsi.go.jp/address-search/AddressSearch?q='+encodeURIComponent(q));
+    const j=await r.json();
+    if(Array.isArray(j)&&j.length){
+      const [lon,lat]=j[0].geometry.coordinates;
+      p.geo={q:a,lat,lon};
+      return p.geo;
+    }
+  }
+  return null;
 }
 function popupHTML(k){
   const p=mvList[k];
@@ -1153,32 +1176,55 @@ function openMap(type){
 }
 
 /* ── Form ── */
-function toggleForm(fid){
+let editIdx=-1; // 編集中の場所（-1 なら新しく追加）
+function toggleForm(fid,ei){
   const f=document.getElementById('formCard');
   f.classList.toggle('show');
   if(f.classList.contains('show')){
-    ['fName','fAddr'].forEach(id=>document.getElementById(id).value='');
+    editIdx=ei>=0?ei:-1;
+    const p=editIdx>=0?places[editIdx]:null;
+    document.getElementById('formTitle').textContent=p?'場所を編集':'場所を追加';
+    document.getElementById('formOk').textContent=p?'保存':'登録';
+    document.getElementById('fName').value=p?p.name:'';
+    document.getElementById('fAddr').value=p?(p.addr||''):'';
     const fs=document.getElementById('fFolder');
     // 下の「場所を追加」から開いたときは、開いているフォルダ（無ければ一番上のフォルダ）に入れる
-    const def=fid||(folders.find(f=>openFolders.includes(f.id))||folders[0]||{}).id||'';
+    const def=p?folderOf(p):(fid||(folders.find(f=>openFolders.includes(f.id))||folders[0]||{}).id||'');
     fs.innerHTML=folderOptions();fs.value=def;
-    formIcon='';updateFormIcon();
+    formIcon=p&&p.icon||'';updateFormIcon();
     document.getElementById('fName').focus();
     sSelect();
   } else {
+    editIdx=-1;
     document.activeElement&&document.activeElement.blur();
     sClose();
   }
 }
 document.getElementById('formCard').addEventListener('click',function(e){if(e.target===this)toggleForm();});
+function editFromDetail(){
+  if(detIdx<0)return;
+  const i=detIdx;
+  document.getElementById('detailModal').classList.remove('show');detIdx=-1;
+  toggleForm('',i);
+}
 function addPlace(){
   const name=document.getElementById('fName').value.trim();
   const addr=document.getElementById('fAddr').value.trim();
-  const note='';
   if(!name||!addr){sErr();toast('名前と住所を入力してください');return;}
   const fid=document.getElementById('fFolder').value;
-  const np={name,addr,note};if(formIcon)np.icon=formIcon;
-  if(fid){np.folder=fid;if(!openFolders.includes(fid)){openFolders.push(fid);saveOpen();}}
+  if(fid&&!openFolders.includes(fid)){openFolders.push(fid);saveOpen();}
+  if(editIdx>=0){
+    // 編集：名前・住所・入れ先・アイコンを書き換える（住所が変われば地図の位置は探し直す）
+    const p=places[editIdx];
+    p.name=name;p.addr=addr;
+    if(fid)p.folder=fid;else delete p.folder;
+    if(formIcon)p.icon=formIcon;else delete p.icon;
+    sel=editIdx;save();render();
+    toggleForm();sAdd();toast(name+' を保存しました');
+    return;
+  }
+  const np={name,addr,note:''};if(formIcon)np.icon=formIcon;
+  if(fid)np.folder=fid;
   places.push(np);
   save();sel=places.length-1;render();
   toggleForm();sAdd();toast(name+' を登録しました');
