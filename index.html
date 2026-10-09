@@ -152,11 +152,16 @@ body{position:fixed;inset:0;width:100%}
 .fd-body .place-list{margin-bottom:8px}
 .fd-body .empty-card{padding:16px;margin-bottom:8px}
 .fd-acts{display:flex;gap:8px}
-.fd-tools{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
-.fd-tool{border:none;border-radius:12px;padding:11px 6px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;background:#eef4ff;color:var(--app-blue)}
+.fd-tools{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.fd-tool{border:none;border-radius:12px;padding:11px 2px;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;background:#eef4ff;color:var(--app-blue);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fd-tool.route{background:#fef0ee;color:#d93025}
 .fd-tool.apple{background:#eaf3fc;color:#1a7fd4}
-.fd-tools .fd-tool:first-child{grid-column:1/-1}
+/* 開いている（選んでいる）フォルダは色を変える */
+.fd.open{border-color:#f0c64a;box-shadow:0 0 0 1.5px #f0c64a}
+.fd.open .fd-head{background:#fff6d6}
+/* 長い名前は文字を小さくする */
+.pi-name.long,.fd-name.long{font-size:14px}
+.pi-name.xlong,.fd-name.xlong{font-size:12.5px}
 
 /* フォルダの場所をまとめて表示する地図 */
 #mapView{position:fixed;inset:0;z-index:350;background:var(--app-bg);display:none;flex-direction:column;font-family:-apple-system,'Helvetica Neue',sans-serif}
@@ -734,13 +739,15 @@ document.getElementById('pickerModal').addEventListener('click',function(e){if(e
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
 /* ── Render ── */
+// 長い名前は文字を小さくして、なるべく全部見えるようにする
+function nameCls(s){const n=[...(s||'')].length;return n>13?' xlong':n>10?' long':'';}
 function rowsHTML(list){
   return '<div class="place-list">'+list.map(([p,i])=>`
     <div class="pi${sel===i?' sel':''} ripple-host" data-i="${i}" onclick="selectPlace(${i})">
       <span class="pi-handle" onclick="event.stopPropagation()">≡</span>
       <div class="pi-icon">${iconHTML(emoji(p))}</div>
       <div class="pi-body">
-        <div class="pi-name">${esc(p.name)}${p.note?`<span class="pi-note">${esc(p.note)}</span>`:''}</div>
+        <div class="pi-name${nameCls(p.name)}">${esc(p.name)}${p.note?`<span class="pi-note">${esc(p.note)}</span>`:''}</div>
         <div class="pi-addr">${esc(p.addr)}</div>
       </div>
       <span class="pi-arr" onclick="event.stopPropagation();openDetail(${i})">›</span>
@@ -762,15 +769,15 @@ function render(){
       <div class="fd-head ripple-host" onclick="toggleFolder(${fi})">
         <span class="pi-handle fd-handle" onclick="event.stopPropagation()">≡</span>
         <div class="fd-ic" onclick="event.stopPropagation();openPicker(${fi})">${f.icon?iconHTML(f.icon):(open?'📂':'📁')}</div>
-        <div class="fd-name">${esc(f.name)}</div>
+        <div class="fd-name${nameCls(f.name)}">${esc(f.name)}</div>
         <span class="fd-cnt">${items.length}件</span>
         <span class="fd-chev">›</span>
       </div>
       <div class="fd-body">
         ${items.length?`<div class="fd-tools">
-          <button class="fd-tool ripple-host" onclick="openFolderMap(${fi})">🗺️ 地図で全部見る</button>
-          <button class="fd-tool route ripple-host" onclick="routeFolder(${fi},'google')">🚗 Googleでルート</button>
-          <button class="fd-tool apple ripple-host" onclick="routeFolder(${fi},'apple')">🚗 Appleでルート</button>
+          <button class="fd-tool ripple-host" onclick="openFolderMap(${fi})">🗺️ 地図で見る</button>
+          <button class="fd-tool apple ripple-host" onclick="routeFolder(${fi},'apple')">Appleルート</button>
+          <button class="fd-tool route ripple-host" onclick="routeFolder(${fi},'google')">Googleルート</button>
         </div>`+rowsHTML(items):'<div class="empty-card">まだ場所が入っていません</div>'}
         <div class="fd-acts">
           <button class="add-btn ripple-host" onclick="toggleForm(folders[${fi}].id)">＋ このフォルダに追加</button>
