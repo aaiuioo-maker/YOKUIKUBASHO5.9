@@ -1078,8 +1078,12 @@ function loadLeaflet(){
 // 住所から位置を探す（国土地理院）。一度探した位置は場所に覚えておく
 // 郵便番号（〒600-8216 など）や「日本、」は位置探しのじゃまになるので外す
 function cleanAddr(a){
-  return a.replace(/^[\s　]*〒?[\s　]*[0-9０-９]{3}[\s　]*[-－ー‐−―]?[\s　]*[0-9０-９]{4}[\s　、,]*/,'')
-          .replace(/^[\s　]*日本(国)?[\s　、,]*/,'').trim();
+  // 「日本、〒…」「〒… 日本」どちらの順でも外せるよう2回かける
+  for(let k=0;k<2;k++){
+    a=a.replace(/^[\s　]*日本(国)?[\s　、,]*/,'')
+       .replace(/^[\s　]*〒?[\s　]*[0-9０-９]{3}[\s　]*[-－ー‐−―]?[\s　]*[0-9０-９]{4}[\s　、,]*/,'');
+  }
+  return a.trim();
 }
 async function geocode(p){
   const a=cleanAddr(p.addr||p.name);
