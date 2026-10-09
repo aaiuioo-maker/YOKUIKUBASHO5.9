@@ -72,7 +72,7 @@ body{position:fixed;inset:0;width:100%}
   border-bottom:.5px solid var(--app-border);
 }
 .sec-lbl{font-size:11px;font-weight:600;color:var(--app-hint);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;padding:0 2px}
-.map-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px}
+.map-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6px}
 .map-btn{
   background:var(--app-surface);border:.5px solid var(--app-border);
   border-radius:10px;padding:6px 4px;cursor:pointer;min-width:0;
@@ -207,7 +207,7 @@ body{position:fixed;inset:0;width:100%}
 .det-row:last-child{border-bottom:none}
 .det-key{font-size:11px;font-weight:600;color:var(--app-hint);text-transform:uppercase;letter-spacing:.06em;min-width:44px;padding-top:2px}
 .det-val{font-size:14px;color:var(--app-text);flex:1;line-height:1.5}
-.det-map-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px}
+.det-map-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
 .det-map-row .sh-btn{padding:12px 2px;font-size:13px;white-space:nowrap}
 
 /* 追加シート：上から出す（キーボードに隠れない） */
@@ -306,7 +306,7 @@ body{position:fixed;inset:0;width:100%}
             <path d="M10 2C7.24 2 5 4.24 5 7c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" fill="#1a7fd4"/>
           </svg>
         </div>
-        <div class="map-name">Appleマップ</div>
+        <div class="map-name">Apple</div>
         <div class="map-desc">純正で開く</div>
       </button>
       <button class="map-btn ripple-host" onclick="openMap('google')">
@@ -315,7 +315,7 @@ body{position:fixed;inset:0;width:100%}
             <path d="M10 2C7.24 2 5 4.24 5 7c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" fill="#ea4335"/>
           </svg>
         </div>
-        <div class="map-name">Googleマップ</div>
+        <div class="map-name">Google</div>
         <div class="map-desc">Googleで開く</div>
       </button>
       <button class="map-btn ripple-host" onclick="openMap('yahoo')">
@@ -324,8 +324,17 @@ body{position:fixed;inset:0;width:100%}
             <path d="M10 2C7.24 2 5 4.24 5 7c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" fill="#7b2fd0"/>
           </svg>
         </div>
-        <div class="map-name">Yahoo!マップ</div>
+        <div class="map-name">Yahoo!</div>
         <div class="map-desc">Yahoo!で開く</div>
+      </button>
+      <button class="map-btn ripple-host" onclick="openMap('zenrin')">
+        <div class="map-icon" style="background:#fff1e0">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+            <path d="M10 2C7.24 2 5 4.24 5 7c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" fill="#e8790c"/>
+          </svg>
+        </div>
+        <div class="map-name">ゼンリン</div>
+        <div class="map-desc">住宅地図</div>
       </button>
     </div>
     <div class="map-hint" id="mapHint">場所をタップして選択してください</div>
@@ -462,6 +471,7 @@ body{position:fixed;inset:0;width:100%}
       <button class="sh-btn blue ripple-host" onclick="openMapDirect('apple')">Appleマップ</button>
       <button class="sh-btn blue ripple-host" style="background:#ea4335" onclick="openMapDirect('google')">Googleマップ</button>
       <button class="sh-btn blue ripple-host" style="background:#7b2fd0" onclick="openMapDirect('yahoo')">Yahoo!マップ</button>
+      <button class="sh-btn blue ripple-host" style="background:#e8790c" onclick="openMapDirect('zenrin')">ゼンリン住宅地図</button>
     </div>
     <div class="sh-btns">
       <button class="sh-btn red ripple-host" onclick="delFromDetail()">この場所を削除</button>
@@ -979,7 +989,26 @@ function goMap(type,p){
   const tryApp=(app,web)=>{window.location.href=app;setTimeout(()=>{if(!document.hidden)window.location.href=web;},700);};
   if(type==='apple')tryApp('maps://?q='+q,'https://maps.apple.com/?q='+q);
   else if(type==='google')tryApp('comgooglemaps://?daddr='+q+'&directionsmode=driving','https://maps.google.com/?q='+q);
-  else tryApp('yjmap://search/?lat=34.99&lon=135.78&zoom=15&query='+q,'https://map.yahoo.co.jp/search?q='+q);
+  else if(type==='yahoo')tryApp('yjmap://search/?lat=34.99&lon=135.78&zoom=15&query='+q,'https://map.yahoo.co.jp/search?q='+q);
+  else{
+    // ゼンリン住宅地図スマートフォンはブラウザで使うサービスで、外から住所を渡せない。
+    // 住所をコピーしてから開くので、向こうの検索欄に貼り付けて探す
+    copyText(p.addr||p.name);
+    toast('住所をコピーしました。ゼンリンの検索欄に貼り付けてください');
+    // タップした直後に開かないと、iPhone では新しいページが止められる
+    window.open('https://zapl.znet-town.net/znettownm/sp/index.php','_blank');
+  }
+}
+function copyText(s){
+  const fallback=()=>{
+    const t=document.createElement('textarea');
+    t.value=s;t.setAttribute('readonly','');t.style.cssText='position:fixed;top:0;left:0;opacity:0';
+    document.body.appendChild(t);t.select();t.setSelectionRange(0,s.length);
+    try{document.execCommand('copy')}catch(_){}
+    document.body.removeChild(t);
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(s).catch(fallback);
+  else fallback();
 }
 function openMapDirect(type){
   if(detIdx<0)return;
