@@ -118,7 +118,16 @@ body{position:fixed;inset:0;width:100%}
   color:#b0b0b8;font-size:20px;cursor:grab;
   touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
 }
-.pi.dragging{z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.2);background:#fff;transition:none!important}
+.pi.dragging{z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.2);background:#fff;transition:none!important;pointer-events:none}
+.fd.dragging{position:relative;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.2);transition:none!important;pointer-events:none}
+.fd.shifting{transition:transform .15s}
+.fd.drag-in{overflow:visible}
+.fd.drop-on{box-shadow:0 0 0 2.5px var(--app-blue)}
+.fd.drop-on .fd-head{background:#eef4ff}
+#topSec.drop-on #placeList{outline:2.5px dashed var(--app-blue);outline-offset:3px;border-radius:12px}
+.fd-handle{margin:-10px -4px -10px -6px}
+.add-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.drag-tip{font-size:11px;color:var(--app-hint);text-align:center;margin:8px 0 18px}
 .pi.shifting{transition:transform .15s}
 .place-list.drag-on{overflow:visible}
 
@@ -324,19 +333,22 @@ body{position:fixed;inset:0;width:100%}
 
   <!-- スクロール領域 -->
   <div class="scroll-area" id="scrollArea">
-    <div class="sec">
+    <div class="sec" id="topSec">
       <div class="sec-lbl">よく行く場所</div>
       <div id="placeList"></div>
-      <button class="add-btn ripple-host" onclick="toggleForm('')">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        場所を追加
-      </button>
     </div>
 
     <div class="sec" style="margin-top:22px">
       <div class="sec-lbl">フォルダ</div>
       <div id="folderList"></div>
-      <button class="add-btn ripple-host" onclick="openFolderForm()">📁 フォルダを作る</button>
+      <div class="add-row">
+        <button class="add-btn ripple-host" onclick="toggleForm('')">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          場所を追加
+        </button>
+        <button class="add-btn ripple-host" onclick="openFolderForm()">📁 フォルダを作る</button>
+      </div>
+      <div class="drag-tip">「≡」をつかんでフォルダの上に持っていくと、そのフォルダに入ります</div>
     </div>
 
     <div class="sec" style="margin-top:18px">
@@ -697,8 +709,9 @@ function render(){
   document.getElementById('folderList').innerHTML=folders.length?'<div class="fd-list">'+folders.map((f,fi)=>{
     const items=all.filter(([p])=>p.folder===f.id);
     const open=openFolders.includes(f.id);
-    return `<div class="fd${open?' open':''}">
+    return `<div class="fd${open?' open':''}" data-f="${fi}">
       <div class="fd-head ripple-host" onclick="toggleFolder(${fi})">
+        <span class="pi-handle fd-handle" onclick="event.stopPropagation()">≡</span>
         <div class="fd-ic">${open?'📂':'📁'}</div>
         <div class="fd-name">${esc(f.name)}</div>
         <span class="fd-cnt">${items.length}件</span>
@@ -792,56 +805,111 @@ function selectPlace(i){
 /* ── 並べ替え（指でドラッグ） ── */
 let drag=null,dragEndAt=0;
 function evY(e){return e.touches&&e.touches.length?e.touches[0].clientY:(e.changedTouches&&e.changedTouches.length?e.changedTouches[0].clientY:e.clientY)}
+function evX(e){return e.touches&&e.touches.length?e.touches[0].clientX:(e.changedTouches&&e.changedTouches.length?e.changedTouches[0].clientX:e.clientX)}
 function dragStart(e){
   const hd=e.target.closest('.pi-handle');
   if(!hd||drag)return;
   e.preventDefault();e.stopPropagation();
-  // 並べ替えは同じリスト（よく行く場所／各フォルダ）の中だけ
-  const row=hd.closest('.pi');
-  const rows=[...row.parentNode.querySelectorAll(':scope > .pi')];
+  // 場所（.pi）かフォルダ（.fd）を、同じリストの中で並べ替える
+  const isFolder=hd.classList.contains('fd-handle');
+  const row=hd.closest(isFolder?'.fd':'.pi');
+  const rows=[...row.parentNode.querySelectorAll(isFolder?':scope > .fd':':scope > .pi')];
   const i=rows.indexOf(row);
-  const g=rows.map(r=>+r.dataset.i);
-  const mids=rows.map(r=>{const b=r.getBoundingClientRect();return b.top+b.height/2});
-  const rb=row.getBoundingClientRect();
-  drag={i,to:i,g,startY:evY(e),rows,row,mids,h:rb.height+1,grab:evY(e)-(rb.top+rb.height/2)};
+  const g=rows.map(r=>+(isFolder?r.dataset.f:r.dataset.i));
+  const sa=document.getElementById('scrollArea');
+  const rects=rows.map(r=>r.getBoundingClientRect());
+  const mids=rects.map(b=>b.top+b.height/2+sa.scrollTop); // スクロールしても変わらない位置
+  const gap=rows.length>1?rects[1].top-rects[0].bottom:0;
+  const last=rects[rects.length-1];
+  drag={kind:isFolder?'folder':'place',i,to:i,g,rows,row,mids,sa,h:rects[i].height+gap,
+    startY:evY(e),y:evY(e),x:evX(e),startScroll:sa.scrollTop,
+    minDy:rects[0].top-rects[i].top,maxDy:last.bottom-rects[i].bottom,
+    src:isFolder?'':folderOf(places[g[i]]),drop:null};
   row.parentNode.classList.add('drag-on');
+  const box=!isFolder&&row.closest('.fd');if(box)box.classList.add('drag-in');
   row.classList.add('dragging');
   rows.forEach(r=>{if(r!==row)r.classList.add('shifting')});
+  drag.timer=setInterval(autoScroll,16);
   sCursor();
+}
+// 画面の上下の端に近づけたら、自動でスクロールする
+function autoScroll(){
+  if(!drag)return;
+  const b=drag.sa.getBoundingClientRect();
+  let v=0;
+  if(drag.y<b.top+60)v=-Math.ceil((b.top+60-drag.y)/5);
+  else if(drag.y>b.bottom-60)v=Math.ceil((drag.y-(b.bottom-60))/5);
+  if(!v)return;
+  const before=drag.sa.scrollTop;
+  drag.sa.scrollTop+=v;
+  if(drag.sa.scrollTop!==before)dragUpdate();
 }
 function dragMove(e){
   if(!drag)return;
   e.preventDefault();
-  const n=drag.rows.length;
-  let dy=evY(e)-drag.startY;
-  dy=Math.max(-drag.i*drag.h,Math.min((n-1-drag.i)*drag.h,dy));
-  drag.row.style.transform=`translateY(${dy}px)`;
-  // 持っている行の中心が、どの行の位置にあるかで行き先を決める
-  const c=drag.mids[drag.i]+dy;
-  let to=0,best=1e9;
-  drag.mids.forEach((m,j)=>{const d=Math.abs(m-c);if(d<best){best=d;to=j;}});
-  if(to!==drag.to){drag.to=to;sCursor();}
-  drag.rows.forEach((r,j)=>{
-    if(j===drag.i)return;
+  drag.y=evY(e);drag.x=evX(e);
+  dragUpdate();
+}
+function dragUpdate(){
+  const d=drag;
+  let dy=d.y-d.startY+(d.sa.scrollTop-d.startScroll);
+  if(d.kind==='folder')dy=Math.max(d.minDy,Math.min(d.maxDy,dy));
+  d.row.style.transform=`translateY(${dy}px)`;
+  // 場所を別のフォルダ（または「よく行く場所」）の上に持っていったら、そこに入れる
+  let drop=null;
+  if(d.kind==='place'){
+    const el=document.elementFromPoint(d.x,d.y);
+    const fd=el&&el.closest('.fd');
+    if(fd&&!fd.contains(d.row))drop={folder:folders[+fd.dataset.f].id,el:fd};
+    else if(!fd&&d.src&&el&&el.closest('#topSec'))drop={folder:'',el:document.getElementById('topSec')};
+  }
+  const pe=d.drop&&d.drop.el,ne=drop&&drop.el;
+  if(pe!==ne){pe&&pe.classList.remove('drop-on');if(ne){ne.classList.add('drop-on');sCursor();}}
+  d.drop=drop;
+  // 並べ替え先：持っている行の中心より上にある行の数
+  let to=d.i;
+  if(!drop){
+    const c=Math.max(d.mids[0],Math.min(d.mids[d.mids.length-1],d.mids[d.i]+dy));
+    to=d.mids.filter((m,j)=>j!==d.i&&m<c).length;
+  }
+  if(to!==d.to){d.to=to;sCursor();}
+  d.rows.forEach((r,j)=>{
+    if(j===d.i)return;
     let off=0;
-    if(drag.i<to&&j>drag.i&&j<=to)off=-drag.h;
-    if(drag.i>to&&j<drag.i&&j>=to)off=drag.h;
+    if(d.i<to&&j>d.i&&j<=to)off=-d.h;
+    if(d.i>to&&j<d.i&&j>=to)off=d.h;
     r.style.transform=off?`translateY(${off}px)`:'';
   });
 }
 function dragEnd(){
   if(!drag)return;
-  const {i,to,g}=drag;
-  drag=null;dragEndAt=Date.now();
-  if(to!==i){
-    const cur=sel>=0?places[sel]:null;
-    // このリストの場所だけを並べ替えて、元の位置に戻す
-    const items=g.map(k=>places[k]);
-    const [m]=items.splice(i,1);
-    items.splice(to,0,m);
-    g.forEach((k,j)=>{places[k]=items[j]});
+  const d=drag;
+  drag=null;dragEndAt=Date.now();clearInterval(d.timer);
+  const cur=sel>=0?places[sel]:null;
+  if(d.drop){
+    // 別のフォルダへ移す（移した先の一番下に入る）
+    const k=d.g[d.i],p=places[k];
+    places.splice(k,1);places.push(p);
+    if(d.drop.folder)p.folder=d.drop.folder;else delete p.folder;
     sel=cur?places.indexOf(cur):-1;
     save();sAdd();
+    const f=folders.find(x=>x.id===d.drop.folder);
+    toast(f?'📁 '+f.name+' に入れました':'よく行く場所に戻しました');
+  }else if(d.to!==d.i){
+    if(d.kind==='folder'){
+      const [m]=folders.splice(d.i,1);
+      folders.splice(d.to,0,m);
+      saveFolders();
+    }else{
+      // このリストの場所だけを並べ替えて、元の位置に戻す
+      const items=d.g.map(k=>places[k]);
+      const [m]=items.splice(d.i,1);
+      items.splice(d.to,0,m);
+      d.g.forEach((k,j)=>{places[k]=items[j]});
+      sel=cur?places.indexOf(cur):-1;
+      save();
+    }
+    sAdd();
   }
   render();
 }
@@ -898,9 +966,11 @@ function moveFolder(fid){
 function goMap(type,p){
   const q=encodeURIComponent(p.addr||p.name);
   sOpen();
-  if(type==='apple'){window.location.href='maps://?q='+q;setTimeout(()=>window.location.href='https://maps.apple.com/?q='+q,400);}
-  else if(type==='google'){window.location.href='comgooglemaps://?daddr='+q+'&directionsmode=driving';setTimeout(()=>window.location.href='https://maps.google.com/?q='+q,400);}
-  else{window.location.href='https://map.yahoo.co.jp/search?q='+q;}
+  // まずアプリで開き、アプリが無くて画面に残っていたらWeb版を開く
+  const tryApp=(app,web)=>{window.location.href=app;setTimeout(()=>{if(!document.hidden)window.location.href=web;},700);};
+  if(type==='apple')tryApp('maps://?q='+q,'https://maps.apple.com/?q='+q);
+  else if(type==='google')tryApp('comgooglemaps://?daddr='+q+'&directionsmode=driving','https://maps.google.com/?q='+q);
+  else tryApp('yjmap://search/?lat=34.99&lon=135.78&zoom=15&query='+q,'https://map.yahoo.co.jp/search?q='+q);
 }
 function openMapDirect(type){
   if(detIdx<0)return;
