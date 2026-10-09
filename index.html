@@ -327,14 +327,15 @@ body{position:fixed;inset:0;width:100%}
         <div class="map-name">Yahoo!</div>
         <div class="map-desc">Yahoo!で開く</div>
       </button>
-      <button class="map-btn ripple-host" onclick="openMap('zenrin')">
+      <button class="map-btn ripple-host" onclick="openMap('copy')">
         <div class="map-icon" style="background:#fff1e0">
           <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-            <path d="M10 2C7.24 2 5 4.24 5 7c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" fill="#e8790c"/>
+            <rect x="7" y="7" width="10" height="11" rx="2" stroke="#e8790c" stroke-width="2"/>
+            <path d="M13 4.5V4a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2h.5" stroke="#e8790c" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </div>
-        <div class="map-name">ゼンリン</div>
-        <div class="map-desc">住宅地図</div>
+        <div class="map-name">住所コピー</div>
+        <div class="map-desc">住所をコピー</div>
       </button>
     </div>
     <div class="map-hint" id="mapHint">場所をタップして選択してください</div>
@@ -471,7 +472,7 @@ body{position:fixed;inset:0;width:100%}
       <button class="sh-btn blue ripple-host" onclick="openMapDirect('apple')">Appleマップ</button>
       <button class="sh-btn blue ripple-host" style="background:#ea4335" onclick="openMapDirect('google')">Googleマップ</button>
       <button class="sh-btn blue ripple-host" style="background:#7b2fd0" onclick="openMapDirect('yahoo')">Yahoo!マップ</button>
-      <button class="sh-btn blue ripple-host" style="background:#e8790c" onclick="openMapDirect('zenrin')">ゼンリン住宅地図</button>
+      <button class="sh-btn blue ripple-host" style="background:#e8790c" onclick="openMapDirect('copy')">住所をコピー</button>
     </div>
     <div class="sh-btns">
       <button class="sh-btn red ripple-host" onclick="delFromDetail()">この場所を削除</button>
@@ -984,20 +985,18 @@ function moveFolder(fid){
 }
 function goMap(type,p){
   const q=encodeURIComponent(p.addr||p.name);
+  if(type==='copy'){
+    // ゼンリン住宅地図など、住所を貼り付けて探すアプリ用。コピーするだけ
+    copyText(p.addr||p.name);
+    sAdd();toast('住所をコピーしました');
+    return;
+  }
   sOpen();
   // まずアプリで開き、アプリが無くて画面に残っていたらWeb版を開く
   const tryApp=(app,web)=>{window.location.href=app;setTimeout(()=>{if(!document.hidden)window.location.href=web;},700);};
   if(type==='apple')tryApp('maps://?q='+q,'https://maps.apple.com/?q='+q);
   else if(type==='google')tryApp('comgooglemaps://?daddr='+q+'&directionsmode=driving','https://maps.google.com/?q='+q);
-  else if(type==='yahoo')tryApp('yjmap://search/?lat=34.99&lon=135.78&zoom=15&query='+q,'https://map.yahoo.co.jp/search?q='+q);
-  else{
-    // ゼンリン住宅地図スマートフォンはブラウザで使うサービスで、外から住所を渡せない。
-    // 住所をコピーしてから開くので、向こうの検索欄に貼り付けて探す
-    copyText(p.addr||p.name);
-    toast('住所をコピーしました。ゼンリンの検索欄に貼り付けてください');
-    // タップした直後に開かないと、iPhone では新しいページが止められる
-    window.open('https://zapl.znet-town.net/znettownm/sp/index.php','_blank');
-  }
+  else tryApp('yjmap://search/?lat=34.99&lon=135.78&zoom=15&query='+q,'https://map.yahoo.co.jp/search?q='+q);
 }
 function copyText(s){
   const fallback=()=>{
