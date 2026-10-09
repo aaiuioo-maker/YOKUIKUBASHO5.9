@@ -277,7 +277,7 @@ body{position:fixed;inset:0;width:100%}
 
 /* toast */
 .toast-wrap{position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:500;pointer-events:none}
-.toast{background:rgba(20,20,20,.88);color:#fff;font-size:13px;padding:9px 18px;border-radius:20px;white-space:nowrap;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;font-family:inherit}
+.toast{background:rgba(20,20,20,.88);color:#fff;font-size:13px;padding:9px 18px;border-radius:20px;white-space:normal;max-width:88vw;text-align:center;line-height:1.5;width:max-content;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;font-family:inherit}
 .toast.show{opacity:1;transform:none}
 /* === Claude Code のキャラクター（ヘッダー左上） === */
 .hdr{display:flex;align-items:center;gap:6px}
@@ -755,6 +755,9 @@ function rowsHTML(list){
   `).join('')+'</div>';
 }
 function render(){
+  // 開いているのは1つのフォルダだけ。閉じたフォルダの場所は選択を外す
+  if(openFolders.length>1)openFolders=openFolders.slice(-1);
+  if(sel>=0&&places[sel]&&folderOf(places[sel])&&!openFolders.includes(folderOf(places[sel])))sel=-1;
   const all=places.map((p,i)=>[p,i]);
   // よく行く場所（フォルダに入っていないもの）は常に表示
   // フォルダ単位で使うので、フォルダに入っていない場所があるときだけ上に出す
@@ -793,7 +796,7 @@ function render(){
 function toggleFolder(fi){
   const id=folders[fi].id;
   if(openFolders.includes(id)){openFolders=openFolders.filter(x=>x!==id);sClose();}
-  else{openFolders.push(id);sSelect();}
+  else{openFolders=[id];sel=-1;sSelect();}
   saveOpen();render();
 }
 function openFolderForm(){
@@ -813,7 +816,7 @@ function addFolder(){
   const name=document.getElementById('fdName').value.trim();
   if(!name){sErr();toast('フォルダの名前を入力してください');return;}
   const id='f'+Date.now().toString(36);
-  folders.push({id,name});openFolders.push(id);
+  folders.push({id,name});openFolders=[id];sel=-1;
   saveFolders();saveOpen();render();
   closeFolderForm();sAdd();toast('📁 '+name+' を作りました');
 }
@@ -1018,7 +1021,7 @@ function delFromDetail(){
 function moveFolder(fid){
   if(detIdx<0)return;
   const p=places[detIdx];
-  if(fid){p.folder=fid;if(!openFolders.includes(fid)){openFolders.push(fid);saveOpen();}}
+  if(fid){p.folder=fid;openFolders=[fid];saveOpen();}
   else delete p.folder;
   save();render();sAdd();
   const f=folders.find(x=>x.id===fid);
@@ -1182,7 +1185,7 @@ document.getElementById('detailModal').addEventListener('click',function(e){if(e
 
 /* ── Map buttons ── */
 function openMap(type){
-  if(sel<0||sel>=places.length){sErr();toast('リストから場所をタップして選んでください');return;}
+  if(sel<0||sel>=places.length){sErr();toast('場所が選択されていません。フォルダを開いて場所をタップしてください');return;}
   goMap(type,places[sel]);
 }
 
@@ -1223,7 +1226,7 @@ function addPlace(){
   const addr=document.getElementById('fAddr').value.trim();
   if(!name||!addr){sErr();toast('名前と住所を入力してください');return;}
   const fid=document.getElementById('fFolder').value;
-  if(fid&&!openFolders.includes(fid)){openFolders.push(fid);saveOpen();}
+  if(fid){openFolders=[fid];saveOpen();}
   if(editIdx>=0){
     // 編集：名前・住所・入れ先・アイコンを書き換える（住所が変われば地図の位置は探し直す）
     const p=places[editIdx];
