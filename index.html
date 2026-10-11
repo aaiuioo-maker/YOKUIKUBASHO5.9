@@ -195,7 +195,10 @@ body{position:fixed;inset:0;width:100%}
 .mv-title{font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mv-sub{font-size:12px;color:var(--app-sub);margin-top:1px}
 .mv-close{border:none;background:#f0f0f0;color:#333;border-radius:10px;padding:9px 16px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;flex-shrink:0}
-#mvMap{flex:1;min-height:0;background:#e8e8e8}
+#mvMap{flex:1;min-height:0;background:#e8e8e8;position:relative}
+.mv-tabs{position:absolute;top:10px;right:10px;z-index:1000;display:flex;background:#fff;border-radius:10px;padding:3px;gap:2px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.mv-tab{border:none;background:transparent;border-radius:8px;padding:7px 9px;font-size:12.5px;font-weight:600;color:#444;font-family:inherit;cursor:pointer;white-space:nowrap}
+.mv-tab.on{background:var(--app-blue);color:#fff}
 .mv-pin{width:30px;height:30px;border-radius:50%;background:var(--app-blue);color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.35)}
 /* 配達時間を指定した場所のピン：18-20 は赤、19-21 は緑（指定なしは青のまま） */
 .mv-pin.t18{background:#e02020}
@@ -515,7 +518,15 @@ body{position:fixed;inset:0;width:100%}
     </div>
     <button class="mv-close ripple-host" onclick="closeFolderMap()">閉じる</button>
   </div>
-  <div id="mvMap"></div>
+  <div id="mvMap">
+    <!-- 地図の種類の切り替え（右上） -->
+    <div class="mv-tabs">
+      <button class="mv-tab" data-k="std" onclick="setBase('std')">標準</button>
+      <button class="mv-tab" data-k="pale" onclick="setBase('pale')">淡色</button>
+      <button class="mv-tab" data-k="photo" onclick="setBase('photo')">航空写真</button>
+      <button class="mv-tab" data-k="osm" onclick="setBase('osm')">OSM</button>
+    </div>
+  </div>
 </div>
 
 <!-- 削除の確認シート -->
@@ -1177,6 +1188,27 @@ function loadLeaflet(){
   });
   return leafletP;
 }
+// 地図の種類（右上のボタンで切り替え。最後に選んだものを覚えておく）
+const GSI_ATTR='<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a>';
+const MV_BASES={
+  std:  {name:'標準',url:'https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',maxZoom:18,attr:GSI_ATTR},
+  pale: {name:'淡色',url:'https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',maxZoom:18,attr:GSI_ATTR},
+  photo:{name:'航空写真',url:'https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg',maxZoom:18,attr:GSI_ATTR},
+  osm:  {name:'OSM',url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',maxZoom:19,attr:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'}
+};
+let mvBaseKey='std',mvBaseLayer=null;
+try{const k=localStorage.getItem('map_base');if(MV_BASES[k])mvBaseKey=k;}catch(_){}
+function setBase(k){
+  if(!MV_BASES[k])return;
+  mvBaseKey=k;
+  try{localStorage.setItem('map_base',k)}catch(_){}
+  document.querySelectorAll('.mv-tab').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
+  if(!mvMap)return;
+  if(mvBaseLayer)mvBaseLayer.remove();
+  const b=MV_BASES[k];
+  mvBaseLayer=L.tileLayer(b.url,{maxZoom:b.maxZoom,attribution:b.attr}).addTo(mvMap);
+  mvBaseLayer.bringToBack();
+}
 // 住所から位置を探す（国土地理院）。一度探した位置は場所に覚えておく
 // 郵便番号（〒600-8216 など）や「日本、」は位置探しのじゃまになるので外す
 function cleanAddr(a){
@@ -1229,9 +1261,10 @@ async function openFolderMap(fi){
   if(token!==mvToken)return;
   if(!mvMap){
     mvMap=L.map('mvMap').setView([34.99,135.78],12);
-    L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',{
-      maxZoom:18,attribution:'<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a>'
-    }).addTo(mvMap);
+    // 切り替えボタンを押したときに、地図が動いたりピンの吹き出しが閉じたりしないようにする
+    const tabs=document.querySelector('.mv-tabs');
+    L.DomEvent.disableClickPropagation(tabs);L.DomEvent.disableScrollPropagation(tabs);
+    setBase(mvBaseKey);
   }
   if(mvLayer)mvLayer.remove();
   mvLayer=L.layerGroup().addTo(mvMap);
