@@ -53,6 +53,30 @@ body{position:fixed;inset:0;width:100%}
 .dq-title::before{left:8px}.dq-title::after{right:8px}
 .dq-window{border:2px solid var(--border);background:var(--panel);padding:16px 20px;width:280px;animation:fin .5s 1.5s both}
 .dq-msg{font-size:13px;line-height:2;min-height:52px;white-space:pre-wrap}
+/* ゴンとカイトが出るオープニング（画像つき・3種類） */
+.op-img{display:none}
+#opening.op-pic .dq-logo{display:none}
+#opening.op-pic .op-img{display:block;width:min(94vw,460px);height:auto;border:2px solid var(--gold);margin-bottom:22px;
+  box-shadow:0 6px 24px rgba(0,0,0,.6);animation:opin 1.1s .2s both}
+#opening.op-pic .dq-title{margin-bottom:20px;animation-delay:1s}
+#opening.op-pic .dq-window{width:min(90vw,360px);animation-delay:1.6s}
+#opening.op-pic .dq-msg{min-height:78px}
+@keyframes opin{from{opacity:0;transform:scale(1.06);filter:brightness(1.8)}to{opacity:1;transform:none;filter:none}}
+/* 1：晴れた草原（明るい空色） */
+#opening.op-v1{background:linear-gradient(#123a5c,#0b1d2e)}
+#opening.op-v1 .op-img,#opening.op-v1 .dq-title{border-color:#9fd36b}
+#opening.op-v1 .dq-title,#opening.op-v1 .dq-title::before,#opening.op-v1 .dq-title::after,#opening.op-v1 .dq-tap{color:#b9e88a}
+#opening.op-v1 .dq-window{background:#0f2a40;border-color:#3d6b8c}
+/* 2：嵐の荒野（くもり空と赤） */
+#opening.op-v2{background:radial-gradient(circle at 50% 30%,#3a3f45,#111316 70%)}
+#opening.op-v2 .op-img,#opening.op-v2 .dq-title{border-color:#c94a3a}
+#opening.op-v2 .dq-title,#opening.op-v2 .dq-title::before,#opening.op-v2 .dq-title::after,#opening.op-v2 .dq-tap{color:#e8735f}
+#opening.op-v2 .dq-window{background:#1b1d21;border-color:#5a5f66}
+/* 3：白黒のペン画（モノクロ） */
+#opening.op-v3{background:#15181c}
+#opening.op-v3 .op-img,#opening.op-v3 .dq-title{border-color:#d8dde3}
+#opening.op-v3 .dq-title,#opening.op-v3 .dq-title::before,#opening.op-v3 .dq-title::after,#opening.op-v3 .dq-tap{color:#eef1f4}
+#opening.op-v3 .dq-window{background:#20252b;border-color:#6b737c}
 .dq-foot{text-align:right;height:18px;margin-top:4px}
 .dq-tap{font-size:12px;color:var(--gold);animation:blink .9s step-end infinite}
 .dq-skip{margin-top:24px;font-size:11px;color:var(--sub);letter-spacing:2px;animation:fin .5s 1.5s both}
@@ -378,6 +402,7 @@ body{position:fixed;inset:0;width:100%}
 <!-- OPENING -->
 <div id="opening">
   <div class="dq-logo">- PRESENTED BY -</div>
+  <img class="op-img" id="opImg" alt="">
   <div class="dq-title">よく行く場所</div>
   <div class="dq-window">
     <div class="dq-msg" id="dqMsg"></div>
@@ -707,7 +732,26 @@ const sClose  =()=>tone(440,.08,'square',.07);
 const sBackup =()=>{tone(784,.07,'square',.09);setTimeout(()=>tone(880,.12,'square',.09),80)};
 
 /* ── Opening（ドラクエ風。文字が1つずつ出て、タップで始まる） ── */
-const MSG='ようこそ\nよく行く場所へ。';
+// 開くたびにランダムで1つ選ぶ（前回と同じものは続けて出さない）
+const OP_VARIANTS=[
+  {msg:'ようこそ\nよく行く場所へ。'},
+  {img:'opening1.jpg',cls:'op-v1',msg:'ゴン「カイト、今日はどこを回るの？」\nカイト「全部この地図に入ってる。行くぞ。」'},
+  {img:'opening2.jpg',cls:'op-v2',msg:'カイト「空があやしい。急いで回るぞ。」\nゴン「うん！ 1軒も残さないよ！」'},
+  {img:'opening3.jpg',cls:'op-v3',msg:'カイト「行き先は決まった。あとは進むだけだ。」\nゴン「よし、出発だ！」'}
+];
+let opPick=Math.floor(Math.random()*OP_VARIANTS.length);
+try{
+  const last=localStorage.getItem('map_op_last');
+  if(last!==null&&opPick===+last)opPick=(opPick+1+Math.floor(Math.random()*(OP_VARIANTS.length-1)))%OP_VARIANTS.length;
+  localStorage.setItem('map_op_last',opPick);
+}catch(_){}
+const OPV=OP_VARIANTS[opPick];
+const MSG=OPV.msg;
+if(OPV.img){
+  const op=document.getElementById('opening');
+  op.classList.add('op-pic',OPV.cls);
+  document.getElementById('opImg').src=OPV.img;
+}
 let charIdx=0,typTimer=null,opened=false;
 function typeNext(){
   const el=document.getElementById('dqMsg');
