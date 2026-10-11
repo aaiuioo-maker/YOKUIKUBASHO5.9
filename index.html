@@ -197,6 +197,9 @@ body{position:fixed;inset:0;width:100%}
 .mv-close{border:none;background:#f0f0f0;color:#333;border-radius:10px;padding:9px 16px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;flex-shrink:0}
 #mvMap{flex:1;min-height:0;background:#e8e8e8}
 .mv-pin{width:30px;height:30px;border-radius:50%;background:var(--app-blue);color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+/* 配達時間を指定した場所のピン：18-20 は赤、19-21 は緑（指定なしは青のまま） */
+.mv-pin.t18{background:#e02020}
+.mv-pin.t19{background:#1a9a3a}
 .mv-pop{font-family:-apple-system,'Helvetica Neue',sans-serif;min-width:180px}
 .mv-pop b{font-size:14px}
 .mv-pop .addr{font-size:12px;color:#666;margin:2px 0 8px}
@@ -1200,7 +1203,7 @@ async function geocode(p){
 }
 function popupHTML(k){
   const p=mvList[k];
-  return `<div class="mv-pop"><b>${k+1}. ${esc(p.name)}</b><div class="addr">${esc(p.addr||'')}</div>
+  return `<div class="mv-pop"><b>${k+1}. ${esc(p.name)}</b><div class="addr">${timeBadge(p.time)}${esc(p.addr||'')}</div>
     <div class="mv-pop-btns">
       <button style="background:#1a6ed8" onclick="goMap('apple',mvList[${k}])">Apple</button>
       <button style="background:#ea4335" onclick="goMap('google',mvList[${k}])">Google</button>
@@ -1237,7 +1240,7 @@ async function openFolderMap(fi){
   const pts=[],miss=[];
   found.forEach((g,k)=>{
     if(!g){miss.push(ps[k].name);return;}
-    L.marker([g.lat,g.lon],{icon:L.divIcon({className:'',html:`<div class="mv-pin">${k+1}</div>`,iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-15]})})
+    L.marker([g.lat,g.lon],{icon:L.divIcon({className:'',html:`<div class="mv-pin${ps[k].time==='18-20'?' t18':ps[k].time==='19-21'?' t19':''}">${k+1}</div>`,iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-15]})})
       .bindPopup(popupHTML(k)).addTo(mvLayer);
     pts.push([g.lat,g.lon]);
   });
