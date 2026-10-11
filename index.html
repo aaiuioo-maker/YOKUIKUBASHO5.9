@@ -112,7 +112,7 @@ body{position:fixed;inset:0;width:100%}
 .pi.done .pi-icon{background:#c9c9cf;opacity:.6}
 .pi.done.sel{background:#d0d6e4}
 /* 配達時間のしるし（18-20 は赤、19-21 は緑） */
-.pi-time{display:inline-block;font-size:11px;font-weight:700;color:#fff;border-radius:5px;padding:1px 5px;margin-right:5px;vertical-align:2px}
+.pi-time{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;border-radius:5px;padding:1px 5px;margin-right:5px;vertical-align:1px;line-height:1.4}
 .pi-time.t18{background:#e02020}
 .pi-time.t19{background:#1a9a3a}
 .pi.done .pi-time{opacity:.55}
@@ -829,8 +829,8 @@ function rowsHTML(list){
       <span class="pi-chk${p.done?' on':''}" role="checkbox" aria-checked="${p.done?'true':'false'}" aria-label="終わった" onclick="event.stopPropagation();toggleDone(${i})"></span>
       <div class="pi-icon">${iconHTML(emoji(p))}</div>
       <div class="pi-body">
-        <div class="pi-name${nameCls(p.name)}">${timeBadge(p.time)}${esc(p.name)}${p.note?`<span class="pi-note">${esc(p.note)}</span>`:''}</div>
-        <div class="pi-addr">${esc(p.addr)}</div>
+        <div class="pi-name${nameCls(p.name)}">${esc(p.name)}${p.note?`<span class="pi-note">${esc(p.note)}</span>`:''}</div>
+        <div class="pi-addr">${timeBadge(p.time)}${esc(p.addr)}</div>
       </div>
       <span class="pi-arr" onclick="event.stopPropagation();openDetail(${i})">›</span>
     </div>
