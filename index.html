@@ -51,17 +51,22 @@ body{position:fixed;inset:0;width:100%}
 }
 .dq-title::before,.dq-title::after{content:'◆';position:absolute;top:50%;transform:translateY(-50%);font-size:10px;color:var(--gold)}
 .dq-title::before{left:8px}.dq-title::after{right:8px}
-.dq-window{border:2px solid var(--border);background:var(--panel);padding:16px 20px;width:280px;animation:fin .5s 1.5s both}
+/* セリフの窓：1回目のタップで出る（場所はとっておき、出るまでは見えないだけ） */
+.dq-window{border:2px solid var(--border);background:var(--panel);padding:16px 20px;width:280px;visibility:hidden}
+#opening.appear .dq-window{visibility:visible;animation:fin .3s .3s both}
 .dq-msg{font-size:13px;line-height:2;min-height:52px;white-space:pre-wrap}
 /* ゴンとカイトが出るオープニング（画像つき・3種類） */
 .op-img{display:none}
 #opening.op-pic .dq-logo{display:none}
-#opening.op-pic .op-img{display:block;width:min(94vw,460px);height:auto;border:2px solid var(--gold);margin-bottom:22px;
-  box-shadow:0 6px 24px rgba(0,0,0,.6);animation:opin 1.1s .2s both}
-#opening.op-pic .dq-title{order:-1;margin-bottom:22px;animation-delay:.2s}  /* タイトル「よく行く場所」を一番上に */
-#opening.op-pic .op-img{animation-delay:.8s}
-#opening.op-pic .dq-window{width:min(90vw,360px);animation-delay:1.6s}
-#opening.op-pic .dq-msg{min-height:78px}
+#opening.op-pic .op-img{display:block;width:min(94vw,460px);height:auto;border:2px solid var(--gold);margin-bottom:18px;
+  box-shadow:0 6px 24px rgba(0,0,0,.6);visibility:hidden}
+/* あらわれた！：絵がチカチカっと点滅して出る（個数計算と同じ） */
+#opening.op-pic.appear .op-img{visibility:visible;animation:encounter .9s steps(1) both}
+@keyframes encounter{0%{opacity:0}15%{opacity:1}30%{opacity:0}45%{opacity:1}60%{opacity:0}75%,100%{opacity:1}}
+#opening.op-pic .dq-title{order:-1;margin-bottom:18px;animation-delay:.2s}  /* タイトル「よく行く場所」を一番上に */
+#opening.op-pic .dq-window{width:min(92vw,370px);padding:12px 14px}
+#opening.op-pic.appear .dq-window{animation-delay:.9s}
+#opening.op-pic .dq-msg{min-height:130px;line-height:1.85}
 @keyframes opin{from{opacity:0;transform:scale(1.06);filter:brightness(1.8)}to{opacity:1;transform:none;filter:none}}
 /* 1：晴れた草原（明るい空色） */
 #opening.op-v1{background:linear-gradient(#123a5c,#0b1d2e)}
@@ -80,7 +85,10 @@ body{position:fixed;inset:0;width:100%}
 #opening.op-v3 .dq-window{background:#20252b;border-color:#6b737c}
 .dq-foot{text-align:right;height:18px;margin-top:4px}
 .dq-tap{font-size:12px;color:var(--gold);animation:blink .9s step-end infinite}
-.dq-skip{margin-top:24px;font-size:11px;color:var(--sub);letter-spacing:2px;animation:fin .5s 1.5s both}
+.dq-skip{margin-top:20px;font-size:13px;color:var(--gold);letter-spacing:2px;min-height:18px;animation:fin .5s 1s both,blink .9s 1.5s step-end infinite}
+#opening.op-v1 .dq-skip{color:#b9e88a}
+#opening.op-v2 .dq-skip{color:#e8735f}
+#opening.op-v3 .dq-skip{color:#eef1f4}
 @keyframes fin{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 
@@ -408,9 +416,9 @@ body{position:fixed;inset:0;width:100%}
   <div class="dq-title">よく行く場所</div>
   <div class="dq-window">
     <div class="dq-msg" id="dqMsg"></div>
-    <div class="dq-foot"><span class="dq-tap" id="dqTap" style="display:none">タップしてはじめる ▼</span></div>
+    <div class="dq-foot"><span class="dq-tap" id="dqTap" style="display:none">▼ タップしてすすむ</span></div>
   </div>
-  <div class="dq-skip">（タップでスキップ）</div>
+  <div class="dq-skip" id="opHint">▼ タップしてはじめる</div>
 </div>
 
 <!-- APP -->
@@ -739,9 +747,9 @@ const sBackup =()=>{tone(784,.07,'square',.09);setTimeout(()=>tone(880,.12,'squa
 const OP_VARIANTS=[
   {msg:'ようこそ\nよく行く場所へ。'},
   // カイトはゴンの師匠。カイトが教え、ゴンが応える
-  {img:'opening1.jpg',cls:'op-v1',msg:'カイト「ゴン、道は頭に入れたか？」\nゴン「うん！カイトに教わった通りに！」'},
-  {img:'opening2.jpg',cls:'op-v2',msg:'カイト「焦るな。一軒ずつ確実にだ。」\nゴン「わかった、カイト！」'},
-  {img:'opening3.jpg',cls:'op-v3',msg:'カイト「迷ったら、地図を信じろ。」\nゴン「うん、もう迷わないよ！」'}
+  {img:'opening1.jpg',cls:'op-v1',msg:'ゴンと カイトが あらわれた！\nカイト「ゴン、今日の道は頭に入れたか？」\nゴン「うん！カイトに教わった通りにね！」\nカイト「よし。地図を見て、一軒ずつだ」\nゴン「まかせて！全部回ってくるよ！」'},
+  {img:'opening2.jpg',cls:'op-v2',msg:'ゴンと カイトが あらわれた！\nカイト「雲が出てきたな。…焦るなよ」\nゴン「でも急がないと、雨が来ちゃうよ」\nカイト「急ぐのと焦るのは違う。確実にだ」\nゴン「わかった、カイト！一軒ずつだね！」'},
+  {img:'opening3.jpg',cls:'op-v3',msg:'ゴンと カイトが あらわれた！\nカイト「ゴン、道に迷ったらどうする？」\nゴン「えっと…カンで進む！」\nカイト「……地図を信じろ。そのためのアプリだ」\nゴン「あ、そっか！じゃあ出発だ！」'}
 ];
 let opPick=Math.floor(Math.random()*OP_VARIANTS.length);
 try{
@@ -756,30 +764,73 @@ if(OPV.img){
   op.classList.add('op-pic',OPV.cls);
   document.getElementById('opImg').src=OPV.img;
 }
-let charIdx=0,typTimer=null,opened=false;
+/* 効果音は個数計算・風袋計算と同じ音（あらわれた！・セリフのピッ・ドラクエ風タイトル曲） */
+function newAC(){initAudio();if(actx.state==='suspended'){try{actx.resume()}catch(_){}}return actx;}
+function sq(ac,type,freq,start,dur,vol){
+  const o=ac.createOscillator(),g=ac.createGain();
+  o.connect(g);g.connect(ac.destination);
+  o.type=type;o.frequency.setValueAtTime(freq,start);
+  g.gain.setValueAtTime(vol,start);g.gain.exponentialRampToValueAtTime(0.001,start+dur);
+  o.start(start);o.stop(start+dur+0.02);
+}
+// あらわれた！：上下にかけ回る速いフレーズ → 低い音でドン
+function playEncounter(){
+  try{
+    const ac=newAC(),now=ac.currentTime+0.02;
+    const run=[1319,1175,1047,988,880,784,698,659,698,784,880,988,1047,1175,1319,1568];
+    run.forEach((f,i)=>sq(ac,'square',f,now+i*0.035,0.05,0.07));
+    const t=now+run.length*0.035+0.02;
+    sq(ac,'square',196,t,0.35,0.09);sq(ac,'square',233,t,0.35,0.06);sq(ac,'sawtooth',98,t,0.4,0.06);
+  }catch(_){}
+}
+// セリフを打つ音：短い「ピッ」
+function playBlip(){try{const ac=newAC();sq(ac,'square',1100,ac.currentTime,0.03,0.045);}catch(_){}}
+// ドラクエ風タイトル曲：主旋律＋ハーモニー＋ベース
+function playOpen(){
+  try{
+    const ac=newAC(),now=ac.currentTime;
+    [[330,0,.1],[392,.1,.1],[494,.2,.1],[523,.3,.18],[659,.5,.18],[784,.7,.22],[988,.94,.12],[1047,1.08,.36],[880,1.46,.12],[988,1.6,.12],[1047,1.74,.5]]
+      .forEach(n=>sq(ac,'square',n[0],now+n[1],n[2],0.09));
+    [[247,0,.1],[294,.1,.1],[370,.2,.1],[392,.3,.18],[523,.5,.18],[659,.7,.22],[784,.94,.12],[880,1.08,.36],[698,1.46,.12],[784,1.6,.12],[880,1.74,.5]]
+      .forEach(n=>sq(ac,'triangle',n[0],now+n[1],n[2],0.05));
+    [[82,0,.28],[98,.3,.18],[110,.5,.18],[131,.7,.22],[147,.94,.5],[131,1.46,.26],[147,1.74,.5]]
+      .forEach(n=>sq(ac,'sawtooth',n[0],now+n[1],n[2],0.04));
+  }catch(_){}
+}
+/* 流れ（個数計算と同じ）：
+   1回目のタップ → ゴンとカイトがあらわれる（効果音）→ セリフが1文字ずつ「ピッ」と流れる
+   セリフの途中でタップ → 残りを一気に表示。全部出たあとのタップ → タイトル曲が鳴ってアプリ画面へ */
+let charIdx=0,typTimer=null,opened=false,opStage=0,opDone=false;
+function paintMsg(){document.getElementById('dqMsg').textContent=MSG.slice(0,charIdx);}
+function finishMsg(){
+  clearTimeout(typTimer);charIdx=MSG.length;paintMsg();opDone=true;
+  document.getElementById('dqTap').style.display='inline';
+}
 function typeNext(){
-  const el=document.getElementById('dqMsg');
-  if(charIdx<MSG.length){
-    el.textContent=MSG.slice(0,charIdx+1);
-    charIdx++;
-    if(charIdx%2===0)sCursor();
-    typTimer=setTimeout(typeNext,70);
-  } else {
-    document.getElementById('dqTap').style.display='inline';
-  }
+  if(opened||opDone)return;
+  charIdx++;paintMsg();
+  const c=MSG.charAt(charIdx-1);
+  if(c!==' '&&c!=='\n'&&c!=='…')playBlip();
+  if(charIdx>=MSG.length){finishMsg();return;}
+  typTimer=setTimeout(typeNext,c==='\n'?380:c==='…'?220:70);
 }
 document.getElementById('opening').addEventListener('click',()=>{
   if(opened)return;
-  opened=true;
-  initAudio();
-  clearTimeout(typTimer);
-  sSelect();
-  sFanfare();
   const op=document.getElementById('opening');
+  if(opStage===0){
+    opStage=1;
+    op.classList.add('appear');
+    document.getElementById('opHint').textContent='';
+    playEncounter();
+    typTimer=setTimeout(typeNext,OPV.img?1100:500);
+    return;
+  }
+  if(!opDone){finishMsg();playBlip();return;}
+  opened=true;
+  playOpen();
   op.classList.add('fade');
   setTimeout(()=>{op.style.display='none';},600);
 });
-setTimeout(typeNext,1000);
 
 /* ── Start ── */
 document.addEventListener('pointerdown',initAudio,{once:true,capture:true});
@@ -1500,6 +1551,33 @@ function openMapDirect(type){
   goMap(type,places[detIdx]);
 }
 document.getElementById('detailModal').addEventListener('click',function(e){if(e.target===this){closeDetail();}});
+// 詳細画面は、下にスワイプすると閉じる（少しだけ下げたときは元に戻る）
+(function(){
+  const sheet=document.querySelector('#detailModal .sheet');
+  let y0=null,dy=0;
+  sheet.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1||sheet.scrollTop>0){y0=null;return;}
+    y0=e.touches[0].clientY;dy=0;
+  },{passive:true});
+  sheet.addEventListener('touchmove',e=>{
+    if(y0===null)return;
+    dy=Math.max(0,e.touches[0].clientY-y0);
+    if(dy>6){e.preventDefault();sheet.style.transition='none';sheet.style.transform=`translateY(${dy}px)`;}
+  },{passive:false});
+  const end=()=>{
+    if(y0===null)return;
+    y0=null;
+    sheet.style.transition='';
+    if(dy>90){
+      sheet.style.transform='translateY(100%)';
+      closeDetail();
+      setTimeout(()=>{sheet.style.transform='';},250);
+    }else sheet.style.transform='';
+    dy=0;
+  };
+  sheet.addEventListener('touchend',end);
+  sheet.addEventListener('touchcancel',end);
+})();
 
 /* ── Map buttons ── */
 function openMap(type){
