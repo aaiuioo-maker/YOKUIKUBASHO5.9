@@ -94,12 +94,36 @@ body{position:fixed;inset:0;width:100%}
 .place-list{display:flex;flex-direction:column;gap:1px;background:var(--app-border);border-radius:12px;overflow:hidden;margin-bottom:12px}
 .pi{
   background:var(--app-surface);padding:10px 12px;
-  display:flex;align-items:center;gap:11px;cursor:pointer;
+  display:flex;align-items:center;gap:8px;cursor:pointer;
   transition:background .1s;position:relative;
 }
 .pi.sel{background:#eef4ff}
 .pi.sel::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--app-blue)}
-.pi-icon{width:40px;height:40px;border-radius:10px;background:#e8e8f0;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0}
+.pi-icon{width:34px;height:34px;border-radius:9px;background:#e8e8f0;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+/* チェックボックス（終わったら付ける） */
+.pi-chk{width:26px;height:26px;flex-shrink:0;border-radius:7px;border:2px solid #b8b8c4;background:#fff;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
+.pi-chk::after{content:'';position:absolute;inset:-8px}  /* 指で押しやすいよう、押せる範囲を広げる */
+.pi-chk.on{background:#6b6b75;border-color:#6b6b75}
+.pi-chk.on::before{content:'';width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-1px,-1px)}
+/* 終わった場所は背景を灰色に */
+.pi.done{background:#dcdce0}
+.pi.done .pi-name,.pi.done .pi-addr{color:#77777f}
+.pi.done .pi-icon{background:#c9c9cf;opacity:.6}
+.pi.done.sel{background:#d0d6e4}
+/* 配達時間のしるし（18-20 は赤、19-21 は緑） */
+.pi-time{display:inline-block;font-size:11px;font-weight:700;color:#fff;border-radius:5px;padding:1px 5px;margin-right:5px;vertical-align:2px}
+.pi-time.t18{background:#e02020}
+.pi-time.t19{background:#1a9a3a}
+.pi.done .pi-time{opacity:.55}
+/* 追加・編集画面の配達時間ボタン */
+.tm-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:6px 0 10px}
+.tm-btn{border-radius:10px;padding:10px 4px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;background:#fff}
+.tm-btn.t18{border:2px solid #e02020;color:#e02020}
+.tm-btn.t19{border:2px solid #1a9a3a;color:#1a9a3a}
+.tm-btn.t18.on{background:#e02020;color:#fff}
+.tm-btn.t19.on{background:#1a9a3a;color:#fff}
+.fd-clr{border:none;background:#ececf0;color:#555;border-radius:12px;padding:0 12px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;flex-shrink:0}
 .pi.sel .pi-icon{background:#d0e0ff}
 .pi-body{flex:1;min-width:0}
 .pi-name{font-size:16px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -435,12 +459,19 @@ body{position:fixed;inset:0;width:100%}
       <div class="add-sheet">
         <div class="add-title" id="formTitle">場所を追加</div>
         <div class="ff">
-          <label>場所の名前</label>
+          <label>住所</label>
+          <input id="fAddr" type="text" placeholder="例：京都市下京区東塩小路町843">
+        </div>
+        <div class="ff">
+          <label>場所の名前（空なら住所を使います）</label>
           <input id="fName" type="text" oninput="updateFormIcon()" placeholder="例：京都中央郵便局">
         </div>
         <div class="ff">
-          <label>住所</label>
-          <input id="fAddr" type="text" placeholder="例：京都市下京区東塩小路町843">
+          <label>備考（配達時間）</label>
+          <div class="tm-row">
+            <button type="button" class="tm-btn t18" data-t="18-20" onclick="pickTime('18-20')">18時〜20時</button>
+            <button type="button" class="tm-btn t19" data-t="19-21" onclick="pickTime('19-21')">19時〜21時</button>
+          </div>
         </div>
         <div class="ff">
           <label>入れる場所</label>
@@ -525,6 +556,10 @@ body{position:fixed;inset:0;width:100%}
       <div class="det-row">
         <div class="det-key">住所</div>
         <div class="det-val" id="detAddr"></div>
+      </div>
+      <div class="det-row" id="detTimeRow">
+        <div class="det-key">時間</div>
+        <div class="det-val" id="detTime"></div>
       </div>
       <div class="det-row" id="detNoteRow">
         <div class="det-key">メモ</div>
@@ -772,15 +807,29 @@ document.getElementById('pickerModal').addEventListener('click',function(e){if(e
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
 /* ── Render ── */
+// チェック（終わった）を付けたり外したりする。終わった場所は背景が灰色になる
+function toggleDone(i){
+  const p=places[i];if(!p)return;
+  if(p.done)delete p.done;else p.done=true;
+  save();render();
+  if(p.done)sAdd();else sCursor();
+}
+// フォルダの中のチェックを全部外す（次の日に使うとき）
+function clearDone(fi){
+  const id=folders[fi].id;
+  places.forEach(p=>{if(p.folder===id)delete p.done;});
+  save();render();sClose();toast('チェックを全部外しました');
+}
 // 長い名前は文字を小さくして、なるべく全部見えるようにする
 function nameCls(s){const n=[...(s||'')].length;return n>13?' xlong':n>10?' long':'';}
 function rowsHTML(list){
   return '<div class="place-list">'+list.map(([p,i])=>`
-    <div class="pi${sel===i?' sel':''} ripple-host" data-i="${i}" onclick="selectPlace(${i})">
+    <div class="pi${sel===i?' sel':''}${p.done?' done':''} ripple-host" data-i="${i}" onclick="selectPlace(${i})">
       <span class="pi-handle" onclick="event.stopPropagation()">≡</span>
+      <span class="pi-chk${p.done?' on':''}" role="checkbox" aria-checked="${p.done?'true':'false'}" aria-label="終わった" onclick="event.stopPropagation();toggleDone(${i})"></span>
       <div class="pi-icon">${iconHTML(emoji(p))}</div>
       <div class="pi-body">
-        <div class="pi-name${nameCls(p.name)}">${esc(p.name)}${p.note?`<span class="pi-note">${esc(p.note)}</span>`:''}</div>
+        <div class="pi-name${nameCls(p.name)}">${timeBadge(p.time)}${esc(p.name)}${p.note?`<span class="pi-note">${esc(p.note)}</span>`:''}</div>
         <div class="pi-addr">${esc(p.addr)}</div>
       </div>
       <span class="pi-arr" onclick="event.stopPropagation();openDetail(${i})">›</span>
@@ -817,6 +866,7 @@ function render(){
         </div>`+rowsHTML(items):'<div class="empty-card">まだ場所が入っていません</div>'}
         <div class="fd-acts">
           <button class="add-btn ripple-host" onclick="toggleForm(folders[${fi}].id)">＋ このフォルダに追加</button>
+          ${items.some(([p])=>p.done)?`<button class="fd-clr ripple-host" onclick="clearDone(${fi})">✓を外す</button>`:''}
           <button class="fd-del ripple-host" onclick="askDelFolder(${fi})">削除</button>
         </div>
       </div>
@@ -1035,6 +1085,8 @@ function openDetail(i){
   const nv=document.getElementById('detNote');
   if(p.note){nv.textContent=p.note;nr.style.display='flex';}
   else{nr.style.display='none';}
+  document.getElementById('detTimeRow').style.display=p.time?'flex':'none';
+  document.getElementById('detTime').innerHTML=p.time?timeBadge(p.time)+(p.time==='18-20'?'18時〜20時':'19時〜21時'):'';
   const ds=document.getElementById('detFolder');
   ds.innerHTML=folderOptions();ds.value=folderOf(p);
   document.getElementById('detailModal').classList.add('show');
@@ -1234,12 +1286,13 @@ function toggleForm(fid,ei){
     document.getElementById('formOk').textContent=p?'保存':'登録';
     document.getElementById('fName').value=p?p.name:'';
     document.getElementById('fAddr').value=p?(p.addr||''):'';
+    formTime=p&&p.time||'';showTime();
     const fs=document.getElementById('fFolder');
     // 下の「場所を追加」から開いたときは、開いているフォルダ（無ければ一番上のフォルダ）に入れる
     const def=p?folderOf(p):(fid||(folders.find(f=>openFolders.includes(f.id))||folders[0]||{}).id||'');
     fs.innerHTML=folderOptions();fs.value=def;
     formIcon=p&&p.icon||'';updateFormIcon();
-    document.getElementById('fName').focus();
+    document.getElementById('fAddr').focus();
     sSelect();
   } else {
     editIdx=-1;
@@ -1254,23 +1307,33 @@ function editFromDetail(){
   document.getElementById('detailModal').classList.remove('show');detIdx=-1;
   toggleForm('',i);
 }
+// 配達時間（備考）：18時〜20時（赤）／19時〜21時（緑）。もう一度押すと外れる
+let formTime='';
+function pickTime(t){formTime=formTime===t?'':t;showTime();sCursor();}
+function showTime(){
+  document.querySelectorAll('.tm-btn').forEach(b=>b.classList.toggle('on',b.dataset.t===formTime));
+}
+function timeBadge(t){
+  return t==='18-20'?'<span class="pi-time t18">18-20</span>':t==='19-21'?'<span class="pi-time t19">19-21</span>':'';
+}
 function addPlace(){
-  const name=document.getElementById('fName').value.trim();
   const addr=document.getElementById('fAddr').value.trim();
-  if(!name||!addr){sErr();toast('名前と住所を入力してください');return;}
+  const name=document.getElementById('fName').value.trim()||addr;
+  if(!addr){sErr();toast('住所を入力してください');return;}
   const fid=document.getElementById('fFolder').value;
   if(fid){openFolders=[fid];saveOpen();}
   if(editIdx>=0){
     // 編集：名前・住所・入れ先・アイコンを書き換える（住所が変われば地図の位置は探し直す）
     const p=places[editIdx];
     p.name=name;p.addr=addr;
+    if(formTime)p.time=formTime;else delete p.time;
     if(fid)p.folder=fid;else delete p.folder;
     if(formIcon)p.icon=formIcon;else delete p.icon;
     sel=editIdx;save();render();
     toggleForm();sAdd();toast(name+' を保存しました');
     return;
   }
-  const np={name,addr,note:''};if(formIcon)np.icon=formIcon;
+  const np={name,addr,note:''};if(formIcon)np.icon=formIcon;if(formTime)np.time=formTime;
   if(fid)np.folder=fid;
   places.push(np);
   save();sel=places.length-1;render();
