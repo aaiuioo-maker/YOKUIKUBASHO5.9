@@ -179,6 +179,7 @@ body{position:fixed;inset:0;width:100%}
 .hd-ic{width:30px;height:30px;border-radius:8px;background:#e2e2e6;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;overflow:hidden;opacity:.7}
 .hd-name{flex:1;min-width:0;font-size:14px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hd-back{border:none;background:#eef4ff;color:var(--app-blue);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0}
+.hd-purge{border:none;background:#ffeeee;color:var(--app-red);border-radius:10px;padding:8px 10px;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0}
 .pi.sel .pi-icon{background:#d0e0ff}
 .pi-body{flex:1;min-width:0}
 .pi-name{font-size:16px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -517,6 +518,7 @@ body{position:fixed;inset:0;width:100%}
       </div>
       <div class="drag-tip">「≡」をつかんでフォルダに持っていくと入ります</div>
       <div id="hiddenSec"></div>
+      <div id="trashSec"></div>
     </div>
 
     <div class="sec" style="margin-top:18px">
@@ -814,7 +816,7 @@ function saveFolders(){localStorage.setItem(FKEY,JSON.stringify(folders))}
 function saveOpen(){try{localStorage.setItem(FOPEN,JSON.stringify(openFolders))}catch(_){}}
 function folderOf(p){return p.folder&&folders.some(f=>f.id===p.folder)?p.folder:''}
 function folderOptions(){
-  return '<option value="">フォルダに入れない</option>'+folders.filter(f=>!f.hidden).map(f=>`<option value="${esc(f.id)}">📁 ${esc(f.name)}</option>`).join('');
+  return '<option value="">フォルダに入れない</option>'+folders.filter(f=>!f.hidden&&!f.trashed).map(f=>`<option value="${esc(f.id)}">📁 ${esc(f.name)}</option>`).join('');
 }
 
 function toast(msg){
@@ -983,8 +985,10 @@ function render(){
   document.getElementById('placeList').innerHTML=top.length?rowsHTML(top):'';
   // フォルダ：タップで開いて中身を見る
   // しまったフォルダ（f.hidden）は一覧に出さず、下の「しまったフォルダ」にまとめる
-  const shown=folders.map((f,fi)=>[f,fi]).filter(([f])=>!f.hidden);
-  const hidden=folders.map((f,fi)=>[f,fi]).filter(([f])=>f.hidden);
+  const shown=folders.map((f,fi)=>[f,fi]).filter(([f])=>!f.hidden&&!f.trashed);
+  const hidden=folders.map((f,fi)=>[f,fi]).filter(([f])=>f.hidden&&!f.trashed);
+  const trashed=folders.map((f,fi)=>[f,fi]).filter(([f])=>f.trashed);
+  renderTrash(trashed,all);
   renderHidden(hidden,all);
   document.getElementById('folderList').innerHTML=shown.length?'<div class="fd-list">'+shown.map(([f,fi])=>{
     const items=all.filter(([p])=>p.folder===f.id);
@@ -1007,7 +1011,7 @@ function render(){
           <button class="add-btn ripple-host" onclick="toggleForm(folders[${fi}].id)">＋ 追加</button>
           ${items.some(([p])=>p.done)?`<button class="fd-clr ripple-host" onclick="clearDone(${fi})">✓を外す</button>`:''}
           <button class="fd-clr ripple-host" onclick="hideFolder(${fi})">しまう</button>
-          <button class="fd-del ripple-host" onclick="askDelFolder(${fi})">削除</button>
+          <button class="fd-del ripple-host" onclick="trashFolder(${fi})">ゴミ箱</button>
         </div>
       </div>
     </div>`;
@@ -1039,6 +1043,34 @@ function renderHidden(hidden,all){
         <div class="hd-ic">${f.icon?iconHTML(f.icon):'📁'}</div>
         <div class="hd-name">${esc(f.name)}（${all.filter(([p])=>p.folder===f.id).length}件）</div>
         <button class="hd-back ripple-host" onclick="showFolder(${fi})">戻す</button>
+      </div>`).join('')+'</div>':'');
+}
+
+/* ── ゴミ箱（フォルダを中の場所ごと入れる。「戻す」で元に戻せる。「完全に消す」で本当に消える） ── */
+let trashOpen=false;
+function trashFolder(fi){
+  const f=folders[fi];if(!f)return;
+  f.trashed=Date.now();
+  openFolders=openFolders.filter(x=>x!==f.id);
+  saveFolders();saveOpen();render();sDel();
+  toast('🗑️ '+f.name+' をゴミ箱に入れました。下の「ゴミ箱」から戻せます');
+}
+function restoreFolder(fi){
+  const f=folders[fi];if(!f)return;
+  delete f.trashed;
+  saveFolders();render();sAdd();toast('📁 '+f.name+' をゴミ箱から戻しました');
+}
+function toggleTrash(){trashOpen=!trashOpen;render();sCursor();}
+function renderTrash(trashed,all){
+  const el=document.getElementById('trashSec');
+  if(!trashed.length){el.innerHTML='';trashOpen=false;return;}
+  el.innerHTML=`<button class="hd-toggle ripple-host" onclick="toggleTrash()">🗑️ ゴミ箱（${trashed.length}）${trashOpen?'▲':'▼'}</button>`+
+    (trashOpen?'<div class="hd-list">'+trashed.map(([f,fi])=>`
+      <div class="hd-row">
+        <div class="hd-ic">${f.icon?iconHTML(f.icon):'📁'}</div>
+        <div class="hd-name">${esc(f.name)}（${all.filter(([p])=>p.folder===f.id).length}件）</div>
+        <button class="hd-back ripple-host" onclick="restoreFolder(${fi})">戻す</button>
+        <button class="hd-purge ripple-host" onclick="askDelFolder(${fi})">完全に消す</button>
       </div>`).join('')+'</div>':'');
 }
 
@@ -1074,8 +1106,8 @@ let confirmFn=null;
 function askDelFolder(fi){
   const f=folders[fi];
   const n=places.filter(p=>p.folder===f.id).length;
-  document.getElementById('cfTitle').textContent='フォルダ「'+f.name+'」を削除しますか？';
-  document.getElementById('cfSub').textContent=n?'中に入っている '+n+' 件の場所も一緒に削除されます。':'中に場所は入っていません。';
+  document.getElementById('cfTitle').textContent='フォルダ「'+f.name+'」を完全に消しますか？';
+  document.getElementById('cfSub').textContent=(n?'中に入っている '+n+' 件の場所も一緒に消えます。':'中に場所は入っていません。')+'\nもう元には戻せません。';
   confirmFn=()=>{
     const cur=sel>=0?places[sel]:null;
     places=places.filter(p=>p.folder!==f.id);
@@ -1488,7 +1520,7 @@ function toggleForm(fid,ei){
     formTime=p&&p.time||'';showTime();
     const fs=document.getElementById('fFolder');
     // 下の「場所を追加」から開いたときは、開いているフォルダ（無ければ一番上のフォルダ）に入れる
-    const def=p?folderOf(p):(fid||(folders.find(f=>openFolders.includes(f.id))||folders.find(f=>!f.hidden)||{}).id||'');
+    const def=p?folderOf(p):(fid||(folders.find(f=>openFolders.includes(f.id))||folders.find(f=>!f.hidden&&!f.trashed)||{}).id||'');
     fs.innerHTML=folderOptions();fs.value=def;
     formIcon=p&&p.icon||'';updateFormIcon();
     document.getElementById('fAddr').focus();
