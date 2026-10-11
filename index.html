@@ -560,9 +560,14 @@ body{position:fixed;inset:0;width:100%}
         <div class="det-key">住所</div>
         <div class="det-val" id="detAddr"></div>
       </div>
-      <div class="det-row" id="detTimeRow">
-        <div class="det-key">時間</div>
-        <div class="det-val" id="detTime"></div>
+      <div class="det-row" id="detTimeRow" style="align-items:center">
+        <div class="det-key" style="padding-top:0">時間</div>
+        <div class="det-val">
+          <div class="tm-row" style="padding:0">
+            <button type="button" class="tm-btn t18 det-tm" data-t="18-20" onclick="setDetTime('18-20')">18時〜20時</button>
+            <button type="button" class="tm-btn t19 det-tm" data-t="19-21" onclick="setDetTime('19-21')">19時〜21時</button>
+          </div>
+        </div>
       </div>
       <div class="det-row" id="detNoteRow">
         <div class="det-key">メモ</div>
@@ -1088,8 +1093,7 @@ function openDetail(i){
   const nv=document.getElementById('detNote');
   if(p.note){nv.textContent=p.note;nr.style.display='flex';}
   else{nr.style.display='none';}
-  document.getElementById('detTimeRow').style.display=p.time?'flex':'none';
-  document.getElementById('detTime').innerHTML=p.time?timeBadge(p.time)+(p.time==='18-20'?'18時〜20時':'19時〜21時'):'';
+  showDetTime();
   const ds=document.getElementById('detFolder');
   ds.innerHTML=folderOptions();ds.value=folderOf(p);
   document.getElementById('detailModal').classList.add('show');
@@ -1314,7 +1318,19 @@ function editFromDetail(){
 let formTime='';
 function pickTime(t){formTime=formTime===t?'':t;showTime();sCursor();}
 function showTime(){
-  document.querySelectorAll('.tm-btn').forEach(b=>b.classList.toggle('on',b.dataset.t===formTime));
+  document.querySelectorAll('.tm-btn:not(.det-tm)').forEach(b=>b.classList.toggle('on',b.dataset.t===formTime));
+}
+// 詳細画面の時間ボタン：押すとすぐその場所の配達時間が変わる（もう一度押すと外れる）
+function showDetTime(){
+  const p=places[detIdx];
+  document.querySelectorAll('.det-tm').forEach(b=>b.classList.toggle('on',!!p&&b.dataset.t===p.time));
+}
+function setDetTime(t){
+  const p=places[detIdx];if(!p)return;
+  if(p.time===t)delete p.time;else p.time=t;
+  save();render();showDetTime();
+  if(p.time){sAdd();toast((t==='18-20'?'18時〜20時':'19時〜21時')+' にしました');}
+  else{sCursor();toast('時間の指定を外しました');}
 }
 function timeBadge(t){
   return t==='18-20'?'<span class="pi-time t18">18-20</span>':t==='19-21'?'<span class="pi-time t19">19-21</span>':'';
