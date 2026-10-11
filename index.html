@@ -530,7 +530,7 @@ body{position:fixed;inset:0;width:100%}
 </div>
 
 <!-- 削除の確認シート -->
-<div class="overlay" id="confirmModal">
+<div class="overlay" id="confirmModal" style="z-index:380">
   <div class="sheet">
     <div class="sh-handle"></div>
     <div class="sh-title" id="cfTitle"></div>
@@ -597,8 +597,8 @@ body{position:fixed;inset:0;width:100%}
     </div>
     <div class="sh-btns">
       <button class="sh-btn gray ripple-host" style="color:var(--app-blue)" onclick="editFromDetail()">名前・住所を編集</button>
-      <button class="sh-btn red ripple-host" onclick="delFromDetail()">この場所を削除</button>
       <button class="sh-btn gray ripple-host" onclick="closeDetail()">閉じる</button>
+      <button class="sh-btn red ripple-host" style="margin-top:10px" onclick="delFromDetail()">この場所を削除</button>
     </div>
   </div>
 </div>
@@ -1114,12 +1114,20 @@ function closeDetail(){
   document.getElementById('detailModal').classList.remove('show');
   sClose();detIdx=-1;
 }
+// 削除は押し間違えないよう、一度「本当に消しますか？」と聞いてから消す
 function delFromDetail(){
   if(detIdx<0)return;
-  const n=places[detIdx].name;
-  places.splice(detIdx,1);
-  if(sel===detIdx)sel=-1;else if(sel>detIdx)sel--;
-  save();render();closeDetail();sDel();toast(n+' を削除しました');
+  const p=places[detIdx];
+  document.getElementById('cfTitle').textContent='「'+p.name+'」を本当に消しますか？';
+  document.getElementById('cfSub').textContent='消すと元に戻せません。';
+  confirmFn=()=>{
+    const i=places.indexOf(p);if(i<0)return;
+    places.splice(i,1);
+    if(sel===i)sel=-1;else if(sel>i)sel--;
+    save();render();closeDetail();sDel();toast(p.name+' を削除しました');
+  };
+  document.getElementById('confirmModal').classList.add('show');
+  sErr();
 }
 function moveFolder(fid){
   if(detIdx<0)return;
