@@ -58,7 +58,8 @@ body{position:fixed;inset:0;width:100%}
 #opening.op-pic .dq-logo{display:none}
 #opening.op-pic .op-img{display:block;width:min(94vw,460px);height:auto;border:2px solid var(--gold);margin-bottom:22px;
   box-shadow:0 6px 24px rgba(0,0,0,.6);animation:opin 1.1s .2s both}
-#opening.op-pic .dq-title{margin-bottom:20px;animation-delay:1s}
+#opening.op-pic .dq-title{order:-1;margin-bottom:22px;animation-delay:.2s}  /* タイトル「よく行く場所」を一番上に */
+#opening.op-pic .op-img{animation-delay:.8s}
 #opening.op-pic .dq-window{width:min(90vw,360px);animation-delay:1.6s}
 #opening.op-pic .dq-msg{min-height:78px}
 @keyframes opin{from{opacity:0;transform:scale(1.06);filter:brightness(1.8)}to{opacity:1;transform:none;filter:none}}
