@@ -738,9 +738,10 @@ const sBackup =()=>{tone(784,.07,'square',.09);setTimeout(()=>tone(880,.12,'squa
 // 開くたびにランダムで1つ選ぶ（前回と同じものは続けて出さない）
 const OP_VARIANTS=[
   {msg:'ようこそ\nよく行く場所へ。'},
-  {img:'opening1.jpg',cls:'op-v1',msg:'ゴン「カイト、今日はどこ回るの？」\nカイト「全部この地図にある。行くぞ」'},
-  {img:'opening2.jpg',cls:'op-v2',msg:'カイト「空があやしい。急ぐぞ。」\nゴン「うん！1軒も残さないよ！」'},
-  {img:'opening3.jpg',cls:'op-v3',msg:'カイト「行き先は決まった。進むぞ。」\nゴン「よし、出発だ！」'}
+  // カイトはゴンの師匠。カイトが教え、ゴンが応える
+  {img:'opening1.jpg',cls:'op-v1',msg:'カイト「ゴン、道は頭に入れたか？」\nゴン「うん！カイトに教わった通りに！」'},
+  {img:'opening2.jpg',cls:'op-v2',msg:'カイト「焦るな。一軒ずつ確実にだ。」\nゴン「わかった、カイト！」'},
+  {img:'opening3.jpg',cls:'op-v3',msg:'カイト「迷ったら、地図を信じろ。」\nゴン「うん、もう迷わないよ！」'}
 ];
 let opPick=Math.floor(Math.random()*OP_VARIANTS.length);
 try{
