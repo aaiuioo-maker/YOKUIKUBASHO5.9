@@ -744,12 +744,14 @@ const sBackup =()=>{tone(784,.07,'square',.09);setTimeout(()=>tone(880,.12,'squa
 
 /* ── Opening（ドラクエ風。文字が1つずつ出て、タップで始まる） ── */
 // 開くたびにランダムで1つ選ぶ（前回と同じものは続けて出さない）
-const OP_VARIANTS=[
+// off:true のものは今は出さない（保留中。off:true を消せばすぐ復活する）
+const OP_ALL=[
   // カイトはゴンの師匠。カイトが教え、ゴンが応える
   {img:'opening1.jpg',cls:'op-v1',msg:'ゴンと カイトが あらわれた！\nカイト「ゴン、今日の道は頭に入れたか？」\nゴン「うん！カイトに教わった通りにね！」\nカイト「よし。地図を見て、一軒ずつだ」\nゴン「まかせて！全部回ってくるよ！」'},
-  {img:'opening2.jpg',cls:'op-v2',msg:'ゴンと カイトが あらわれた！\nカイト「雲が出てきたな。…焦るなよ」\nゴン「でも急がないと、雨が来ちゃうよ」\nカイト「急ぐのと焦るのは違う。確実にだ」\nゴン「わかった、カイト！一軒ずつだね！」'},
-  {img:'opening3.jpg',cls:'op-v3',msg:'ゴンと カイトが あらわれた！\nカイト「ゴン、道に迷ったらどうする？」\nゴン「えっと…カンで進む！」\nカイト「……地図を信じろ。そのためのアプリだ」\nゴン「あ、そっか！じゃあ出発だ！」'}
+  {off:true,img:'opening2.jpg',cls:'op-v2',msg:'ゴンと カイトが あらわれた！\nカイト「雲が出てきたな。…焦るなよ」\nゴン「でも急がないと、雨が来ちゃうよ」\nカイト「急ぐのと焦るのは違う。確実にだ」\nゴン「わかった、カイト！一軒ずつだね！」'},
+  {off:true,img:'opening3.jpg',cls:'op-v3',msg:'ゴンと カイトが あらわれた！\nカイト「ゴン、道に迷ったらどうする？」\nゴン「えっと…カンで進む！」\nカイト「……地図を信じろ。そのためのアプリだ」\nゴン「あ、そっか！じゃあ出発だ！」'}
 ];
+const OP_VARIANTS=OP_ALL.filter(v=>!v.off);
 let opPick=Math.floor(Math.random()*OP_VARIANTS.length);
 try{
   const last=localStorage.getItem('map_op_last');
