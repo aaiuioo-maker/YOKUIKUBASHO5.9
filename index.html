@@ -38,7 +38,11 @@ body{position:fixed;inset:0;width:100%}
 /* === オープニング（開いたときに出る赤い画面。近畿発の運賃表と同じ作り） === */
 .op{position:fixed;inset:0;z-index:600;display:grid;place-items:center;padding:calc(16px + env(safe-area-inset-top)) 20px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(#d9332a,#b81d16);color:#fff;cursor:pointer;transition:opacity .5s,visibility .5s;overflow:auto;font-family:-apple-system,'Helvetica Neue',sans-serif}
 .op.hide{opacity:0;visibility:hidden}
-.op-in{width:100%;max-width:360px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
+/* 背景の地図（国土地理院）。上に薄い白をかぶせて、文字を読みやすくする */
+.op-map{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none}
+.op-map img{position:absolute;width:256px;height:256px;max-width:none}
+.op-map::after{content:"";position:absolute;inset:0;background:rgba(247,246,243,.55)}
+.op-in{position:relative;z-index:1;width:100%;max-width:360px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
 .op-sub{margin:0;font-size:.85rem;font-weight:700;background:#fff;color:#c8231b;border-radius:999px;padding:3px 14px;animation:op-drop .5s both}
 .op-t{margin:0;display:flex;flex-direction:column;line-height:1.15;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.15)}
 .op-t span{font-size:2.1rem;animation:op-drop .6s .1s both}
@@ -765,6 +769,23 @@ function opKey(d){
 (function opening(){
   const op=document.getElementById('op');
   if(!op)return;
+  // 背景の地図：国土地理院の地図（256px の四角い画像）を、京都駅のあたりを真ん中にして画面いっぱいに敷き詰める
+  (function opMap(){
+    const Z=15,LAT=34.9858,LON=135.7588;
+    const n=2**Z,fx=(LON+180)/360*n;
+    const r=LAT*Math.PI/180,fy=(1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*n;
+    const tx=Math.floor(fx),ty=Math.floor(fy);
+    const ox=(fx-tx)*256,oy=(fy-ty)*256;       // 真ん中の地点が、その画像の中のどこにあるか
+    const W=innerWidth,H=innerHeight,cx=Math.ceil(W/512)+1,cy=Math.ceil(H/512)+1;
+    const box=document.createElement('div');box.className='op-map';
+    for(let dy=-cy;dy<=cy;dy++)for(let dx=-cx;dx<=cx;dx++){
+      const im=document.createElement('img');
+      im.alt='';im.src=`https://cyberjapandata.gsi.go.jp/xyz/std/${Z}/${tx+dx}/${ty+dy}.png`;
+      im.style.left=(W/2-ox+dx*256)+'px';im.style.top=(H/2-oy+dy*256)+'px';
+      box.appendChild(im);
+    }
+    op.prepend(box);
+  })();
   const h=new Date().getHours();
   document.getElementById('ophello').textContent=h<5?'夜おそくまで、おつかれさまです':h<11?'おはようございます':h<17?'こんにちは':'おつかれさまです';
   const TIPS=[
