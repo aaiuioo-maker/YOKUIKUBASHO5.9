@@ -43,6 +43,7 @@ body{position:fixed;inset:0;width:100%}
 .op-map svg{position:absolute;inset:0;width:100%;height:100%}
 .op-pulse{transform-box:fill-box;transform-origin:center;animation:op-here 1.8s ease-out infinite}
 @keyframes op-here{from{transform:scale(1);opacity:.9}to{transform:scale(3.2);opacity:0}}
+.op-route{animation:op-route 1.2s linear infinite}   /* 配達ルートの点線が、現在地から先へ流れる */@keyframes op-route{to{stroke-dashoffset:-22}}
 .op-map::after{content:"";position:absolute;inset:0;background:rgba(247,246,243,.25)}
 /* 地図の上でも文字が読めるよう、白いふちを付ける */
 .op .op-t,.op .op-hello{text-shadow:0 0 3px #fff,0 0 6px #fff,0 0 10px #fff}
@@ -390,91 +391,76 @@ body{position:fixed;inset:0;width:100%}
 
 <!-- オープニング：タップすると音が鳴って、いつもの画面に切りかわる（近畿発の運賃表と同じ作り） -->
 <div class="op" id="op" role="dialog" aria-label="オープニング">
-  <!-- 背景の地図（スマホの地図アプリ風のイラスト。実在の場所ではない） -->
+  <!-- 背景の地図（配達ルートの絵地図。実在の場所ではない） -->
   <div class="op-map" aria-hidden="true">
     <svg viewBox="0 0 400 860" preserveAspectRatio="xMidYMid slice">
       <defs>
-        <!-- 建物がならぶ街並み -->
-        <pattern id="opBlk" width="48" height="40" patternUnits="userSpaceOnUse" patternTransform="rotate(-20)">
-          <rect x="3" y="3" width="20" height="15" rx="2" fill="#e4e6e9"/>
-          <rect x="26" y="3" width="18" height="15" rx="2" fill="#eceef0"/>
-          <rect x="3" y="21" width="13" height="15" rx="2" fill="#eceef0"/>
-          <rect x="19" y="21" width="25" height="15" rx="2" fill="#e1e3e6"/>
+        <!-- 街の区画（紙のような色） -->
+        <pattern id="opBlk2" width="70" height="62" patternUnits="userSpaceOnUse">
+          <rect x="5" y="5" width="60" height="52" rx="8" fill="#ece3cf"/>
         </pattern>
-        <!-- ピン（しずく形） -->
-        <symbol id="opPin" viewBox="0 0 24 32"><path d="M12 0C5.4 0 0 5.2 0 11.6 0 20 12 32 12 32s12-12 12-20.4C24 5.2 18.6 0 12 0z"/><circle cx="12" cy="11.5" r="4.6" fill="#fff"/></symbol>
+        <!-- 小さな家（屋根の色ちがい） -->
+        <symbol id="opHouse" viewBox="0 0 20 18"><path d="M2 8 L10 1 L18 8Z"/><rect x="4" y="8" width="12" height="9" rx="1" fill="#fffaf0"/><rect x="8.5" y="11" width="3" height="6" fill="#c9b79a"/></symbol>
+        <!-- 木 -->
+        <symbol id="opTree" viewBox="0 0 14 16"><circle cx="7" cy="6" r="6" fill="#8cc56b"/><rect x="6" y="11" width="2" height="5" fill="#a07a4f"/></symbol>
       </defs>
-      <rect width="400" height="860" fill="#f2f2f0"/>
-      <rect width="400" height="860" fill="url(#opBlk)"/>
-      <!-- 公園（緑） -->
-      <path d="M262 168 L372 128 L398 236 L292 270Z" fill="#cdeacf"/>
-      <path d="M30 120 L118 96 L132 168 L46 190Z" fill="#d4ecd5"/>
-      <path d="M210 610 L282 590 L300 690 L226 712Z" fill="#cdeacf"/>
-      <path d="M150 140 L210 124 L222 176 L162 192Z" fill="#d4ecd5"/>
-      <!-- 大きな建物（うすいオレンジ） -->
-      <g fill="#f6e3c6">
-        <rect x="128" y="210" width="62" height="44" rx="3" transform="rotate(-20 159 232)"/>
-        <rect x="236" y="420" width="44" height="30" rx="3" transform="rotate(-20 258 435)"/>
-        <rect x="90" y="560" width="52" height="34" rx="3" transform="rotate(-20 116 577)"/>
-        <rect x="300" y="640" width="48" height="36" rx="3" transform="rotate(-20 324 658)"/>
-        <rect x="40" y="760" width="56" height="34" rx="3" transform="rotate(-20 68 777)"/>
+      <rect width="400" height="860" fill="#f6f0e2"/>
+      <rect width="400" height="860" fill="url(#opBlk2)"/>
+      <!-- 公園（木がたくさん） -->
+      <rect x="215" y="135" width="130" height="110" rx="18" fill="#d6ebbf"/>
+      <rect x="20" y="560" width="110" height="105" rx="18" fill="#d6ebbf"/>
+      <g>
+        <use href="#opTree" x="230" y="150" width="16" height="18"/><use href="#opTree" x="258" y="168" width="18" height="20"/><use href="#opTree" x="300" y="150" width="16" height="18"/>
+        <use href="#opTree" x="318" y="200" width="18" height="20"/><use href="#opTree" x="240" y="208" width="16" height="18"/>
+        <use href="#opTree" x="34" y="574" width="18" height="20"/><use href="#opTree" x="80" y="590" width="16" height="18"/><use href="#opTree" x="50" y="626" width="16" height="18"/><use href="#opTree" x="100" y="630" width="18" height="20"/>
       </g>
-      <!-- 細い道（白） -->
-      <g stroke="#fff" stroke-width="8" stroke-linecap="round" fill="none">
-        <path d="M-10 250 L410 100"/><path d="M-10 420 L410 270"/><path d="M-10 640 L410 490"/><path d="M-10 790 L410 640"/>
-        <path d="M60 -10 L180 870"/><path d="M250 -10 L330 870"/><path d="M360 -10 L400 300"/>
+      <!-- 川と橋 -->
+      <path d="M-20 455 C80 400 140 520 230 470 S360 380 420 430" stroke="#9fd0ef" stroke-width="46" fill="none" stroke-linecap="round"/>
+      <path d="M-20 455 C80 400 140 520 230 470 S360 380 420 430" stroke="#bfe0f5" stroke-width="30" fill="none" stroke-linecap="round"/>
+      <path d="M-20 455 C80 400 140 520 230 470 S360 380 420 430" stroke="#fff" stroke-width="1.5" fill="none" stroke-dasharray="6 14" opacity=".8"/>
+      <g fill="#fffaf0" stroke="#c9b79a" stroke-width="1.5">
+        <rect x="58" y="410" width="20" height="74" rx="3"/>
+        <rect x="268" y="410" width="20" height="74" rx="3"/>
       </g>
-      <!-- 線路（グレーと白のしましま） -->
-      <path d="M-10 300 L420 40" stroke="#9aa0a6" stroke-width="6" fill="none"/>
-      <path d="M-10 300 L420 40" stroke="#fff" stroke-width="2.5" stroke-dasharray="10 10" fill="none"/>
-      <!-- 黄色い通り -->
-      <g stroke="#f6d36a" stroke-width="7" stroke-linecap="round" fill="none">
-        <path d="M200 -10 C230 200 200 400 300 870"/>
-        <path d="M395 -10 C380 300 320 560 270 870"/>
+      <!-- 道（白） -->
+      <g stroke="#fffaf0" stroke-width="10" fill="none">
+        <path d="M0 0 V860 M70 0 V860 M140 0 V860 M210 0 V860 M280 0 V860 M350 0 V860"/>
+        <path d="M0 62 H400 M0 124 H400 M0 186 H400 M0 248 H400 M0 310 H400 M0 372 H400 M0 558 H400 M0 620 H400 M0 682 H400 M0 744 H400 M0 806 H400"/>
       </g>
-      <!-- 大通り（オレンジ。ふちが赤いのは混んでいる道） -->
-      <path d="M150 -10 C80 220 70 460 130 870" stroke="#f0a640" stroke-width="20" fill="none"/>
-      <path d="M150 -10 C80 220 70 460 130 870" stroke="#fcd58e" stroke-width="13" fill="none"/>
-      <path d="M154 -10 C86 220 76 460 136 870" stroke="#e0453a" stroke-width="2.5" fill="none" stroke-dasharray="70 30"/>
-      <path d="M-20 330 L420 500" stroke="#ef9f3c" stroke-width="40" fill="none"/>
-      <path d="M-20 330 L420 500" stroke="#fbc37d" stroke-width="32" fill="none"/>
-      <path d="M-20 318 L420 488" stroke="#e0453a" stroke-width="3" fill="none"/>
-      <path d="M-20 342 L420 512" stroke="#3aa564" stroke-width="2.5" fill="none" stroke-dasharray="40 20"/>
-      <path d="M330 520 L250 870" stroke="#e0453a" stroke-width="3" fill="none"/>
-      <!-- 信号 -->
-      <g><rect x="74" y="384" width="26" height="10" rx="5" fill="#333"/><circle cx="80" cy="389" r="3" fill="#34a853"/><circle cx="87" cy="389" r="3" fill="#fbbc04"/><circle cx="94" cy="389" r="3" fill="#ea4335"/></g>
-      <g><rect x="352" y="474" width="26" height="10" rx="5" fill="#333"/><circle cx="358" cy="479" r="3" fill="#34a853"/><circle cx="365" cy="479" r="3" fill="#fbbc04"/><circle cx="372" cy="479" r="3" fill="#ea4335"/></g>
-      <!-- 名前（白いふち付き） -->
-      <g font-family="-apple-system,'Hiragino Sans',sans-serif" font-size="14" font-weight="600" stroke="#fff" stroke-width="3.5" paint-order="stroke" stroke-linejoin="round">
-        <text x="56" y="232" fill="#1a73e8">○○駅</text>
-        <text x="300" y="214" fill="#2e7d32">○○公園</text>
-        <text x="40" y="92" fill="#2e7d32">○○神社</text>
-        <text x="100" y="470" fill="#1a73e8">コンビニ ○○店</text>
-        <text x="190" y="388" fill="#e8710a">○○カフェ</text>
-        <text x="250" y="560" fill="#5f6368">○○銀行</text>
-        <text x="40" y="700" fill="#5f6368">○○ビル</text>
-        <text x="200" y="740" fill="#2e7d32">○○公園</text>
-        <text x="270" y="440" fill="#c2185b">ドラッグストア</text>
-        <text x="215" y="460" fill="#555" font-size="13" transform="rotate(21 215 460)">○○通</text>
+      <!-- 大きな通り -->
+      <path d="M0 310 H400" stroke="#f3d79a" stroke-width="16" fill="none"/>
+      <path d="M210 0 V860" stroke="#f3d79a" stroke-width="16" fill="none"/>
+      <!-- 家 -->
+      <g>
+        <use href="#opHouse" x="16" y="18" width="24" height="22" fill="#e57373"/><use href="#opHouse" x="92" y="80" width="24" height="22" fill="#64b5f6"/>
+        <use href="#opHouse" x="160" y="20" width="24" height="22" fill="#ffb74d"/><use href="#opHouse" x="300" y="80" width="24" height="22" fill="#81c784"/>
+        <use href="#opHouse" x="20" y="200" width="24" height="22" fill="#ba68c8"/><use href="#opHouse" x="162" y="262" width="24" height="22" fill="#e57373"/>
+        <use href="#opHouse" x="300" y="262" width="24" height="22" fill="#64b5f6"/><use href="#opHouse" x="160" y="576" width="24" height="22" fill="#81c784"/>
+        <use href="#opHouse" x="300" y="576" width="24" height="22" fill="#ffb74d"/><use href="#opHouse" x="230" y="700" width="24" height="22" fill="#ba68c8"/>
+        <use href="#opHouse" x="90" y="760" width="24" height="22" fill="#64b5f6"/><use href="#opHouse" x="300" y="760" width="24" height="22" fill="#e57373"/>
+        <use href="#opHouse" x="20" y="700" width="24" height="22" fill="#ffb74d"/><use href="#opHouse" x="360" y="640" width="24" height="22" fill="#81c784"/>
       </g>
-      <!-- 駅のマーク -->
-      <g><rect x="104" y="214" width="22" height="22" rx="5" fill="#1a73e8"/><rect x="109" y="219" width="12" height="9" rx="2" fill="#fff"/><circle cx="111" cy="231" r="1.5" fill="#fff"/><circle cx="119" cy="231" r="1.5" fill="#fff"/></g>
-      <!-- ピン -->
-      <use href="#opPin" x="276" y="182" width="22" height="30" fill="#34a853"/>
-      <use href="#opPin" x="20" y="98" width="20" height="27" fill="#34a853"/>
-      <use href="#opPin" x="74" y="440" width="24" height="32" fill="#4285f4"/>
-      <use href="#opPin" x="164" y="356" width="22" height="30" fill="#f29900"/>
-      <use href="#opPin" x="246" y="410" width="22" height="30" fill="#e8558b"/>
-      <use href="#opPin" x="222" y="530" width="22" height="30" fill="#4285f4"/>
-      <use href="#opPin" x="14" y="668" width="22" height="30" fill="#78858f"/>
-      <use href="#opPin" x="176" y="708" width="22" height="30" fill="#34a853"/>
-      <use href="#opPin" x="330" y="560" width="22" height="30" fill="#78858f"/>
-      <!-- 現在地（青い点と、向いている方向） -->
-      <g class="op-here">
-        <path d="M232 790 L200 744 A52 52 0 0 1 270 750Z" fill="rgba(26,115,232,.22)"/>
-        <circle class="op-pulse" cx="232" cy="790" r="12" fill="rgba(26,115,232,.25)"/>
-        <circle cx="232" cy="790" r="9" fill="#1a73e8" stroke="#fff" stroke-width="3.5"/>
-        <text x="232" y="822" text-anchor="middle" font-family="-apple-system,'Hiragino Sans',sans-serif" font-size="14" font-weight="700" fill="#1a73e8" stroke="#fff" stroke-width="3.5" paint-order="stroke">現在地</text>
+      <!-- 名前 -->
+      <g font-family="-apple-system,'Hiragino Sans',sans-serif" font-size="13" font-weight="700" stroke="#fffaf0" stroke-width="3.5" paint-order="stroke" stroke-linejoin="round">
+        <text x="250" y="132" fill="#4e8a3a">○○公園</text>
+        <text x="300" y="402" fill="#3d86b8">○○川</text>
+        <text x="40" y="556" fill="#4e8a3a">○○広場</text>
+      </g>
+      <!-- 配達ルート（現在地 → 1 → 2 → 3 → 4）：点線が流れる -->
+      <path class="op-route" d="M105 800 L105 744 L245 744 L245 620 L330 620 L330 372 L175 372 L175 186 L105 186 L105 70"
+        stroke="#1a73e8" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 9"/>
+      <!-- 番号つきのピン（色はアプリと同じ：青＝指定なし、赤＝18-20、緑＝19-21） -->
+      <g font-family="-apple-system,'Hiragino Sans',sans-serif" font-size="14" font-weight="800" text-anchor="middle">
+        <g><circle cx="245" cy="682" r="15" fill="#1a6ed8" stroke="#fff" stroke-width="3"/><text x="245" y="687" fill="#fff">1</text></g>
+        <g><circle cx="330" cy="520" r="15" fill="#e02020" stroke="#fff" stroke-width="3"/><text x="330" y="525" fill="#fff">2</text></g>
+        <g><circle cx="175" cy="280" r="15" fill="#1a9a3a" stroke="#fff" stroke-width="3"/><text x="175" y="285" fill="#fff">3</text></g>
+        <g><circle cx="105" cy="70" r="15" fill="#1a6ed8" stroke="#fff" stroke-width="3"/><text x="105" y="75" fill="#fff">4</text></g>
+      </g>
+      <!-- 現在地（青い点。まわりがふわっと広がる） -->
+      <g>
+        <circle class="op-pulse" cx="105" cy="800" r="11" fill="rgba(26,115,232,.25)"/>
+        <circle cx="105" cy="800" r="9" fill="#1a73e8" stroke="#fff" stroke-width="3.5"/>
+        <text x="105" y="834" text-anchor="middle" font-family="-apple-system,'Hiragino Sans',sans-serif" font-size="13" font-weight="700" fill="#1a73e8" stroke="#fffaf0" stroke-width="3.5" paint-order="stroke">現在地</text>
       </g>
     </svg>
   </div>
