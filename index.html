@@ -41,7 +41,9 @@ body{position:fixed;inset:0;width:100%}
 /* 背景の地図（国土地理院）。上に薄い白をかぶせて、文字を読みやすくする */
 .op-map{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none}
 .op-map img{position:absolute;width:256px;height:256px;max-width:none}
-.op-map::after{content:"";position:absolute;inset:0;background:rgba(247,246,243,.55)}
+.op-map::after{content:"";position:absolute;inset:0;background:rgba(247,246,243,.62)}
+/* 地図の上でも文字が読めるよう、白いふちを付ける */
+.op .op-t,.op .op-hello{text-shadow:0 0 3px #fff,0 0 6px #fff,0 0 10px #fff}
 .op-in{position:relative;z-index:1;width:100%;max-width:360px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
 .op-sub{margin:0;font-size:.85rem;font-weight:700;background:#fff;color:#c8231b;border-radius:999px;padding:3px 14px;animation:op-drop .5s both}
 .op-t{margin:0;display:flex;flex-direction:column;line-height:1.15;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.15)}
