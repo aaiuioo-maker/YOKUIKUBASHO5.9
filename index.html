@@ -138,7 +138,8 @@ body{position:fixed;inset:0;width:100%}
   transition:background .1s;position:relative;
 }
 .pi.sel{background:#eef4ff}
-.pi.sel::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--app-blue)}
+/* 選んでいる場所は、行全体を赤い四角で囲む（チェックを付けて灰色になっていても分かるように） */
+.pi.sel::before{content:'';position:absolute;inset:0;border:3px solid #e02020;border-radius:4px;pointer-events:none;z-index:2}
 .pi-icon{width:34px;height:34px;border-radius:9px;background:#e8e8f0;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
 /* チェックボックス（終わったら付ける） */
 .pi-chk{width:26px;height:26px;flex-shrink:0;border-radius:7px;border:2px solid #b8b8c4;background:#fff;
@@ -150,7 +151,7 @@ body{position:fixed;inset:0;width:100%}
 .pi.done{background:#dcdce0}
 .pi.done .pi-name,.pi.done .pi-addr{color:#77777f}
 .pi.done .pi-icon{background:#c9c9cf;opacity:.6}
-.pi.done.sel{background:#d0d6e4}
+.pi.done.sel{background:#dcdce0}
 /* 配達時間のしるし（18-20 は赤、19-21 は緑） */
 .pi-time{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;border-radius:5px;padding:1px 5px;margin-right:5px;vertical-align:1px;line-height:1.4}
 .pi-time.t18{background:#e02020}
