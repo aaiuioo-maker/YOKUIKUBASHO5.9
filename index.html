@@ -224,6 +224,8 @@ body{position:fixed;inset:0;width:100%}
 .fd-body .empty-card{padding:16px;margin-bottom:8px}
 .fd-acts{display:flex;gap:8px}
 .fd-tools{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.fd-maprow{margin-bottom:8px}
+.fd-maprow .map-grid{margin-bottom:4px}
 .fd-tool{border:none;border-radius:12px;padding:11px 2px;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;background:#eef4ff;color:var(--app-blue);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fd-tool.route{background:#fef0ee;color:#d93025}
 .fd-tool.apple{background:#eaf3fc;color:#1a7fd4}
@@ -647,9 +649,9 @@ body{position:fixed;inset:0;width:100%}
     </div>
   </div>
 
-  <!-- マップボタン固定 -->
-  <div class="map-panel">
-    <div class="sec-lbl">マップで開く</div>
+  <!-- マップで開く（4つのボタン）：開いているフォルダの中に出す。render() がここから写して使う -->
+  <template id="mapRowTpl">
+  <div class="fd-maprow">
     <div class="map-grid">
       <button class="map-btn ripple-host" onclick="openMap('apple')">
         <div class="map-icon" style="background:#e8f3fd">
@@ -691,6 +693,7 @@ body{position:fixed;inset:0;width:100%}
     </div>
     <div class="map-hint" id="mapHint">場所をタップして選択してください</div>
   </div>
+  </template>
 
   <!-- スクロール領域 -->
   <div class="scroll-area" id="scrollArea">
@@ -1163,6 +1166,8 @@ function clearDone(fi){
 }
 // 長い名前は文字を小さくして、なるべく全部見えるようにする
 function nameCls(s){const n=[...(s||'')].length;return n>13?' xlong':n>10?' long':'';}
+// 「マップで開く」の4つのボタン（Apple・Google・Yahoo!・コピー）。開いているフォルダの中に出す
+function mapRowHTML(){return document.getElementById('mapRowTpl').innerHTML;}
 function rowsHTML(list){
   return '<div class="place-list">'+list.map(([p,i])=>`
     <div class="pi${sel===i?' sel':''}${p.done?' done':''} ripple-host" data-i="${i}" onclick="selectPlace(${i})">
@@ -1206,6 +1211,7 @@ function render(){
         <span class="fd-chev">›</span>
       </div>
       <div class="fd-body">
+        ${open&&items.length?mapRowHTML():''}
         ${items.length?`<div class="fd-tools">
           <button class="fd-tool ripple-host" onclick="openFolderMap(${fi})">🗺️ 地図で見る</button>
           <button class="fd-tool apple ripple-host" onclick="routeFolder(${fi},'apple')">Appleルート</button>
@@ -1333,6 +1339,7 @@ document.getElementById('confirmModal').addEventListener('click',function(e){if(
 
 function updateMapHint(){
   const hint=document.getElementById('mapHint');
+  if(!hint)return;   // フォルダを開いていないときは、マップで開くのボタン自体が出ていない
   if(sel>=0&&sel<places.length){
     hint.textContent='選択中：'+places[sel].name;
     hint.style.color='var(--app-blue)';
