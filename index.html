@@ -729,12 +729,12 @@ body{position:fixed;inset:0;width:100%}
       <div class="add-sheet">
         <div class="add-title" id="formTitle">場所を追加</div>
         <div class="ff">
-          <label>住所</label>
-          <input id="fAddr" type="text" placeholder="例：京都市下京区東塩小路町843">
-        </div>
-        <div class="ff">
           <label>場所の名前（空なら住所を使います）</label>
           <input id="fName" type="text" oninput="updateFormIcon()" placeholder="例：京都中央郵便局">
+        </div>
+        <div class="ff">
+          <label>住所</label>
+          <input id="fAddr" type="text" placeholder="例：京都市下京区東塩小路町843">
         </div>
         <div class="ff">
           <label>備考（配達時間）</label>
@@ -1754,7 +1754,7 @@ function toggleForm(fid,ei){
     const def=p?folderOf(p):(fid||(folders.find(f=>openFolders.includes(f.id))||folders.find(f=>!f.hidden&&!f.trashed)||{}).id||'');
     fs.innerHTML=folderOptions();fs.value=def;
     formIcon=p&&p.icon||'';updateFormIcon();
-    document.getElementById('fAddr').focus();
+    document.getElementById('fName').focus();
     sSelect();
   } else {
     editIdx=-1;
