@@ -1592,10 +1592,22 @@ function goMap(type,p){
   else if(type==='google')tryApp('comgooglemaps://?daddr='+q+'&directionsmode=driving','https://maps.google.com/?q='+q);
   else tryApp('yjmap://search/?lat=34.99&lon=135.78&zoom=15&query='+q,'https://map.yahoo.co.jp/search?q='+q);
 }
-// まずアプリで開き、アプリが無くて画面に残っていたらWeb版を開く
+// まずアプリで開き、アプリが無くて画面に残っていたらWeb版を開く。
+//   iPhone は「○○で開きますか？」と確認を出すので、確認が出たりアプリに切り替わったりしたら
+//   Web版は開かない（前は確認の間にこの画面がWeb版に置き換わり、戻るとWeb版が出ていた）。
+//   Web版を開くときも、この画面は置き換えずに別の画面で開く
 function tryApp(app,web){
+  let left=false;
+  const mark=()=>{left=true;};
+  const evs=[[window,'blur'],[window,'pagehide'],[document,'visibilitychange']];
+  evs.forEach(([t,ev])=>t.addEventListener(ev,mark));
   window.location.href=app;
-  setTimeout(()=>{if(!document.hidden)window.location.href=web;},700);
+  setTimeout(()=>{
+    evs.forEach(([t,ev])=>t.removeEventListener(ev,mark));
+    if(left||document.hidden||!document.hasFocus())return;
+    const w=window.open(web,'_blank');
+    if(!w)window.location.href=web;   // 別の画面が開けないときだけ、この画面で開く
+  },1200);
 }
 
 /* ── フォルダの場所をまとめて地図に ── */
