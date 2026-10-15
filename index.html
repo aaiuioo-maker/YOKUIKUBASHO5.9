@@ -131,6 +131,7 @@ body{position:fixed;inset:0;width:100%}
 .place-list{display:flex;flex-direction:column;gap:1px;background:var(--app-border);border-radius:12px;overflow:hidden;margin-bottom:12px}
 /* フォルダの場所が多いときは、一覧の中だけがスクロールする */
 .place-list.scrolly{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.place-list > .pi{flex-shrink:0}   /* 行がつぶれないようにする */
 .pi{
   background:var(--app-surface);padding:10px 12px;
   display:flex;align-items:center;gap:8px;cursor:pointer;
