@@ -129,6 +129,8 @@ body{position:fixed;inset:0;width:100%}
 
 /* place list */
 .place-list{display:flex;flex-direction:column;gap:1px;background:var(--app-border);border-radius:12px;overflow:hidden;margin-bottom:12px}
+/* フォルダの場所が多いときは、一覧の中だけがスクロールする */
+.place-list.scrolly{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .pi{
   background:var(--app-surface);padding:10px 12px;
   display:flex;align-items:center;gap:8px;cursor:pointer;
@@ -1183,6 +1185,9 @@ function rowsHTML(list){
   `).join('')+'</div>';
 }
 function render(){
+  // 開いているフォルダの一覧がどこまでスクロールしていたかを覚えておき、描き直したあとに戻す
+  const prevList=document.querySelector('.fd.open .fd-body > .place-list');
+  const prevKey=prevList?prevList.closest('.fd').dataset.f:null,prevTop=prevList?prevList.scrollTop:0;
   // 開いているのは1つのフォルダだけ。閉じたフォルダの場所は選択を外す
   if(openFolders.length>1)openFolders=openFolders.slice(-1);
   if(sel>=0&&places[sel]&&folderOf(places[sel])&&!openFolders.includes(folderOf(places[sel])))sel=-1;
@@ -1226,6 +1231,8 @@ function render(){
       </div>
     </div>`;
   }).join('')+'</div>':(folders.length?'<div class="empty-card">表示しているフォルダはありません<br>下の「しまったフォルダ」から戻せます</div>':'<div class="empty-card">フォルダはまだありません<br>仕事の日に回る場所などをまとめておけます</div>');
+  const list=fitOpenList();
+  if(list&&prevKey!==null&&list.closest('.fd').dataset.f===prevKey)list.scrollTop=prevTop;
   updateMapHint();
 }
 
@@ -1287,10 +1294,33 @@ function renderTrash(trashed,all){
 /* ── Folders ── */
 function toggleFolder(fi){
   const id=folders[fi].id;
-  if(openFolders.includes(id)){openFolders=openFolders.filter(x=>x!==id);sClose();}
+  const opening=!openFolders.includes(id);
+  if(!opening){openFolders=openFolders.filter(x=>x!==id);sClose();}
   else{openFolders=[id];sel=-1;sSelect();}
   saveOpen();render();
+  if(opening)showOpenFolderAtTop();
 }
+// 開いたフォルダを画面の上までスクロールして、場所の一覧だけが中でスクロールする形にする
+function showOpenFolderAtTop(){
+  const sa=document.getElementById('scrollArea'),fd=document.querySelector('.fd.open');
+  if(!fd)return;
+  sa.scrollTop+=fd.getBoundingClientRect().top-sa.getBoundingClientRect().top-6;
+  fitOpenList();
+}
+// 開いているフォルダの場所の一覧の高さを、画面に収まる大きさにする（多いときは一覧の中だけがスクロール）
+function fitOpenList(){
+  const sa=document.getElementById('scrollArea'),fd=document.querySelector('.fd.open');
+  const list=fd&&fd.querySelector('.fd-body > .place-list');
+  if(!list)return null;
+  list.style.maxHeight='';list.classList.remove('scrolly');
+  const acts=fd.querySelector('.fd-acts');
+  const above=list.getBoundingClientRect().top-fd.getBoundingClientRect().top;   // フォルダ名・地図ボタンなどの高さ
+  const below=(acts?acts.offsetHeight:0)+8+10+6;                                // 下のボタンと余白
+  const avail=Math.floor(sa.clientHeight-above-below-6);
+  if(avail>=150&&list.scrollHeight>avail){list.style.maxHeight=avail+'px';list.classList.add('scrolly');}
+  return list;
+}
+window.addEventListener('resize',()=>fitOpenList());
 function openFolderForm(){
   document.getElementById('fdName').value='';
   document.getElementById('folderForm').classList.add('show');
@@ -1372,7 +1402,9 @@ function dragStart(e){
   const rows=[...row.parentNode.querySelectorAll(isFolder?':scope > .fd':':scope > .pi')];
   const i=rows.indexOf(row);
   const g=rows.map(r=>+(isFolder?r.dataset.f:r.dataset.i));
-  const sa=document.getElementById('scrollArea');
+  // 一覧が中でスクロールしているときは、その一覧を基準にする（自動スクロールも一覧の中で）
+  const inner=!isFolder&&row.parentNode.classList.contains('scrolly');
+  const sa=inner?row.parentNode:document.getElementById('scrollArea');
   const rects=rows.map(r=>r.getBoundingClientRect());
   const mids=rects.map(b=>b.top+b.height/2+sa.scrollTop); // スクロールしても変わらない位置
   const gap=rows.length>1?rects[1].top-rects[0].bottom:0;
@@ -1382,8 +1414,10 @@ function dragStart(e){
     startY:evY(e),y:evY(e),x:evX(e),startScroll:sa.scrollTop,
     minDy:rects[0].top-rects[i].top,maxDy:last.bottom-rects[i].bottom,
     src:isFolder?'':folderOf(places[g[i]]),drop:null};
-  row.parentNode.classList.add('drag-on');
-  const box=!isFolder&&row.closest('.fd');if(box)box.classList.add('drag-in');
+  if(!inner){
+    row.parentNode.classList.add('drag-on');
+    const box=!isFolder&&row.closest('.fd');if(box)box.classList.add('drag-in');
+  }
   row.classList.add('dragging');
   rows.forEach(r=>{if(r!==row)r.classList.add('shifting')});
   drag.timer=setInterval(autoScroll,16);
@@ -1879,6 +1913,7 @@ function closeRestore(){
 document.getElementById('restoreModal').addEventListener('click',function(e){if(e.target===this)closeRestore();});
 
 render();
+showOpenFolderAtTop();
 setupScroll(document.getElementById('scrollArea'));
 function resetView(){window.scrollTo(0,0);document.body.scrollTop=0;document.documentElement.scrollTop=0;}
 document.addEventListener('focusout',()=>setTimeout(resetView,50));
