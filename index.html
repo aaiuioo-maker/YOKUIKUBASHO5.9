@@ -184,7 +184,7 @@ body{position:fixed;inset:0;width:100%}
 .pi-arr:active{background:#dde8ff}
 .pi.done .pi-arr{background:#ececf0;border-color:#c9c9cf;color:#77777f}
 .pi-handle{
-  width:38px;height:60px;margin:-10px -2px -10px -10px;flex-shrink:0;
+  width:32px;height:60px;margin:-10px -4px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
   color:#b0b0b8;font-size:20px;cursor:grab;
   touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
@@ -1166,8 +1166,8 @@ function nameCls(s){const n=[...(s||'')].length;return n>13?' xlong':n>10?' long
 function rowsHTML(list){
   return '<div class="place-list">'+list.map(([p,i])=>`
     <div class="pi${sel===i?' sel':''}${p.done?' done':''} ripple-host" data-i="${i}" onclick="selectPlace(${i})">
-      <span class="pi-handle" onclick="event.stopPropagation()">≡</span>
       <span class="pi-chk${p.done?' on':''}" role="checkbox" aria-checked="${p.done?'true':'false'}" aria-label="終わった" onclick="event.stopPropagation();toggleDone(${i})"></span>
+      <span class="pi-handle" onclick="event.stopPropagation()">≡</span>
       <div class="pi-icon">${iconHTML(emoji(p))}</div>
       <div class="pi-body">
         <div class="pi-name${nameCls(p.name)}">${esc(p.name)}${p.note?`<span class="pi-note">${esc(p.note)}</span>`:''}</div>
@@ -1702,12 +1702,15 @@ function openMapDirect(type){
   goMap(type,places[detIdx]);
 }
 document.getElementById('detailModal').addEventListener('click',function(e){if(e.target===this){closeDetail();}});
-// 詳細画面は、下にスワイプすると閉じる（少しだけ下げたときは元に戻る）
-(function(){
-  const sheet=document.querySelector('#detailModal .sheet');
+// 下から出る画面（詳細・アイコン選び）は、下にスワイプすると閉じる（少しだけ下げたときは元に戻る）
+function swipeToClose(sel,closeFn){
+  const sheet=document.querySelector(sel);
   let y0=null,dy=0;
   sheet.addEventListener('touchstart',e=>{
     if(e.touches.length!==1||sheet.scrollTop>0){y0=null;return;}
+    // アイコンの一覧などを上へスクロールした状態なら、まずその一覧を戻すのを優先する
+    const sc=e.target.closest('.pk-grid');
+    if(sc&&sc.scrollTop>0){y0=null;return;}
     y0=e.touches[0].clientY;dy=0;
   },{passive:true});
   sheet.addEventListener('touchmove',e=>{
@@ -1721,14 +1724,16 @@ document.getElementById('detailModal').addEventListener('click',function(e){if(e
     sheet.style.transition='';
     if(dy>90){
       sheet.style.transform='translateY(100%)';
-      closeDetail();
+      closeFn();
       setTimeout(()=>{sheet.style.transform='';},250);
     }else sheet.style.transform='';
     dy=0;
   };
   sheet.addEventListener('touchend',end);
   sheet.addEventListener('touchcancel',end);
-})();
+}
+swipeToClose('#detailModal .sheet',closeDetail);
+swipeToClose('#pickerModal .sheet',closePicker);
 
 /* ── Map buttons ── */
 function openMap(type){
