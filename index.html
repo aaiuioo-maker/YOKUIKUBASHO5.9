@@ -1589,7 +1589,8 @@ function goMap(type,p){
   sOpen();
   // まずアプリで開き、アプリが無くて画面に残っていたらWeb版を開く
   if(type==='apple')tryApp('maps://?q='+q,'https://maps.apple.com/?q='+q);
-  else if(type==='google')tryApp('comgooglemaps://?daddr='+q+'&directionsmode=driving','https://maps.google.com/?q='+q);
+  // Google：経路は出さず、場所を検索してピンを立てるだけ（ルートはフォルダの「Googleルート」で）
+  else if(type==='google')tryApp('comgooglemaps://?q='+q,'https://www.google.com/maps/search/?api=1&query='+q);
   else tryApp('yjmap://search/?lat=34.99&lon=135.78&zoom=15&query='+q,'https://map.yahoo.co.jp/search?q='+q);
 }
 // まずアプリで開き、アプリが無くて画面に残っていたらWeb版を開く。
