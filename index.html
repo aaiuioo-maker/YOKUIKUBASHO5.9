@@ -755,6 +755,10 @@ body{position:fixed;inset:0;width:100%}
 <div class="overlay top" id="formCard">
       <div class="add-sheet">
         <div class="add-title" id="formTitle">場所を追加</div>
+        <div class="ff ic-row" onclick="openPicker('form')">
+          <label>アイコン</label>
+          <div class="ic-row-body"><span class="ic-cur" id="fIconCur">📍</span><span class="ic-row-txt" id="fIconTxt">おまかせ（名前から自動）</span><span class="ic-row-arr">変更 ›</span></div>
+        </div>
         <div class="ff">
           <label>場所の名前（空なら住所を使います）</label>
           <input id="fName" type="text" oninput="updateFormIcon()" placeholder="例：京都中央郵便局">
@@ -773,10 +777,6 @@ body{position:fixed;inset:0;width:100%}
         <div class="ff">
           <label>入れる場所</label>
           <select id="fFolder"></select>
-        </div>
-        <div class="ff ic-row" onclick="openPicker('form')">
-          <label>アイコン</label>
-          <div class="ic-row-body"><span class="ic-cur" id="fIconCur">📍</span><span class="ic-row-txt" id="fIconTxt">おまかせ（名前から自動）</span><span class="ic-row-arr">変更 ›</span></div>
         </div>
         <div class="form-acts">
           <button class="fbtn ripple-host" onclick="toggleForm()">キャンセル</button>
@@ -1778,9 +1778,11 @@ function openMapDirect(type){
   goMap(type,places[detIdx]);
 }
 document.getElementById('detailModal').addEventListener('click',function(e){if(e.target===this){closeDetail();}});
-// 下から出る画面（詳細・アイコン選び）は、下にスワイプすると閉じる（少しだけ下げたときは元に戻る）
-function swipeToClose(sel,closeFn){
+// 下から出る画面（詳細・アイコン選び）は下に、上から出る画面（場所を追加・フォルダを作る）は上に
+// スワイプすると閉じる（少しだけ動かしたときは元に戻る）
+function swipeToClose(sel,closeFn,up){
   const sheet=document.querySelector(sel);
+  const sign=up?-1:1;
   let y0=null,dy=0;
   sheet.addEventListener('touchstart',e=>{
     if(e.touches.length!==1||sheet.scrollTop>0){y0=null;return;}
@@ -1791,15 +1793,15 @@ function swipeToClose(sel,closeFn){
   },{passive:true});
   sheet.addEventListener('touchmove',e=>{
     if(y0===null)return;
-    dy=Math.max(0,e.touches[0].clientY-y0);
-    if(dy>6){e.preventDefault();sheet.style.transition='none';sheet.style.transform=`translateY(${dy}px)`;}
+    dy=Math.max(0,sign*(e.touches[0].clientY-y0));
+    if(dy>6){e.preventDefault();sheet.style.transition='none';sheet.style.transform=`translateY(${sign*dy}px)`;}
   },{passive:false});
   const end=()=>{
     if(y0===null)return;
     y0=null;
     sheet.style.transition='';
-    if(dy>90){
-      sheet.style.transform='translateY(100%)';
+    if(dy>(up?60:90)){
+      sheet.style.transform=`translateY(${sign*100}%)`;
       closeFn();
       setTimeout(()=>{sheet.style.transform='';},250);
     }else sheet.style.transform='';
@@ -1810,6 +1812,8 @@ function swipeToClose(sel,closeFn){
 }
 swipeToClose('#detailModal .sheet',closeDetail);
 swipeToClose('#pickerModal .sheet',closePicker);
+swipeToClose('#formCard .add-sheet',()=>toggleForm(),true);
+swipeToClose('#folderForm .add-sheet',closeFolderForm,true);
 
 /* ── Map buttons ── */
 function openMap(type){
