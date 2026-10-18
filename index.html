@@ -330,6 +330,13 @@ body{position:fixed;inset:0;width:100%}
 }
 .overlay.show .add-sheet{transform:none}
 .add-title{font-size:16px;font-weight:700;text-align:center;padding:6px 0 4px}
+/* いちばん上の帯：左にキャンセル、まん中にタイトル、右に登録 */
+.add-head{display:flex;align-items:center;padding:2px 6px 6px;border-bottom:.5px solid var(--app-border);touch-action:none}
+.add-head .add-title{flex:1;padding:0}
+.ah-btn{border:none;background:transparent;font-size:15px;font-family:inherit;color:var(--app-sub);padding:10px 12px;cursor:pointer;flex-shrink:0;min-width:84px;text-align:left}
+.ah-btn.ok{color:#fff;background:var(--app-blue);font-weight:700;border-radius:10px;text-align:center;min-width:72px;padding:9px 12px}
+/* 入力欄の部分：キーボードが出て画面が狭くなったら、ここだけスクロールする */
+.add-body{max-height:calc(var(--vvh,100vh) - 90px - env(safe-area-inset-top));overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .add-sheet .ff input{font-size:16px}
 
 /* アイコン選択 */
@@ -754,7 +761,13 @@ body{position:fixed;inset:0;width:100%}
 <!-- 追加シート（画面の上に出す） -->
 <div class="overlay top" id="formCard">
       <div class="add-sheet">
-        <div class="add-title" id="formTitle">場所を追加</div>
+        <!-- いちばん上の帯：キャンセル・タイトル・登録（キーボードが出ても隠れない）。この帯を上にスライドしても閉じる -->
+        <div class="add-head">
+          <button class="ah-btn ripple-host" onclick="toggleForm()">キャンセル</button>
+          <div class="add-title" id="formTitle">場所を追加</div>
+          <button class="ah-btn ok ripple-host" id="formOk" onclick="addPlace()">登録</button>
+        </div>
+        <div class="add-body">
         <div class="ff ic-row" onclick="openPicker('form')">
           <label>アイコン</label>
           <div class="ic-row-body"><span class="ic-cur" id="fIconCur">📍</span><span class="ic-row-txt" id="fIconTxt">おまかせ（名前から自動）</span><span class="ic-row-arr">変更 ›</span></div>
@@ -778,9 +791,6 @@ body{position:fixed;inset:0;width:100%}
           <label>入れる場所</label>
           <select id="fFolder"></select>
         </div>
-        <div class="form-acts">
-          <button class="fbtn ripple-host" onclick="toggleForm()">キャンセル</button>
-          <button class="fbtn ok ripple-host" id="formOk" onclick="addPlace()">登録</button>
         </div>
       </div>
 </div>
@@ -788,14 +798,16 @@ body{position:fixed;inset:0;width:100%}
 <!-- フォルダを作るシート（画面の上に出す） -->
 <div class="overlay top" id="folderForm">
   <div class="add-sheet">
-    <div class="add-title">フォルダを作る</div>
+    <div class="add-head">
+      <button class="ah-btn ripple-host" onclick="closeFolderForm()">キャンセル</button>
+      <div class="add-title">フォルダを作る</div>
+      <button class="ah-btn ok ripple-host" onclick="addFolder()">作る</button>
+    </div>
+    <div class="add-body">
     <div class="ff">
       <label>フォルダの名前</label>
       <input id="fdName" type="text" placeholder="例：月曜の集荷ルート">
     </div>
-    <div class="form-acts">
-      <button class="fbtn ripple-host" onclick="closeFolderForm()">キャンセル</button>
-      <button class="fbtn ok ripple-host" onclick="addFolder()">作る</button>
     </div>
   </div>
 </div>
@@ -1786,6 +1798,9 @@ function swipeToClose(sel,closeFn,up){
   let y0=null,dy=0;
   sheet.addEventListener('touchstart',e=>{
     if(e.touches.length!==1||sheet.scrollTop>0){y0=null;return;}
+    // 上から出る画面は、いちばん上の帯（キャンセル・タイトル・登録）をつかんだときだけ閉じる。
+    //   入力欄の上で指を動かしても閉じない（キーボードが出ているときに下の欄を見ようとして閉じてしまわないように）
+    if(up&&!e.target.closest('.add-head')){y0=null;return;}
     // アイコンの一覧などを上へスクロールした状態なら、まずその一覧を戻すのを優先する
     const sc=e.target.closest('.pk-grid');
     if(sc&&sc.scrollTop>0){y0=null;return;}
@@ -1814,6 +1829,13 @@ swipeToClose('#detailModal .sheet',closeDetail);
 swipeToClose('#pickerModal .sheet',closePicker);
 swipeToClose('#formCard .add-sheet',()=>toggleForm(),true);
 swipeToClose('#folderForm .add-sheet',closeFolderForm,true);
+// キーボードが出ているときの見えている画面の高さ（入力欄の部分の高さに使う）
+(function(){
+  const set=()=>document.documentElement.style.setProperty('--vvh',(window.visualViewport?visualViewport.height:innerHeight)+'px');
+  set();
+  if(window.visualViewport)visualViewport.addEventListener('resize',set);
+  window.addEventListener('resize',set);
+})();
 
 /* ── Map buttons ── */
 function openMap(type){
