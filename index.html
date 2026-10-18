@@ -943,7 +943,11 @@ document.addEventListener('pointerdown',e=>{
 
 /* ── Audio ── */
 let actx=null;
-function initAudio(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)()}
+// 効果音は「ほかの音楽と一緒に鳴らす」種類（ambient）にする。こうしないと、アプリを開いたり音が鳴ったりしたときに
+// iPhone で再生中の音楽が止まってしまう（iOS 16.4 以降の Safari で使える設定。近畿発の運賃表と同じ）
+function setAmbient(){try{if(navigator.audioSession)navigator.audioSession.type='ambient';}catch(_){}}
+setAmbient();
+function initAudio(){setAmbient();if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)()}
 function tone(freq,dur,type,vol){
   if(!actx)return;
   const o=actx.createOscillator(),g=actx.createGain();
