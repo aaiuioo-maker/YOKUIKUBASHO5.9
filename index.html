@@ -922,6 +922,10 @@ body{position:fixed;inset:0;width:100%}
         <div class="det-key">入れ先</div>
         <div class="det-val"><select class="det-sel" id="detFolder" onchange="moveFolder(this.value)"></select></div>
       </div>
+      <div class="det-row">
+        <div class="det-key">コピー</div>
+        <div class="det-val"><select class="det-sel" id="detCopy" onchange="copyToFolder(this.value)"></select></div>
+      </div>
     </div>
     <div class="det-map-row">
       <button class="sh-btn blue ripple-host" onclick="openMapDirect('apple')">Appleマップ</button>
@@ -1604,6 +1608,8 @@ function openDetail(i){
   showDetTime();
   const ds=document.getElementById('detFolder');
   ds.innerHTML=folderOptions();ds.value=folderOf(p);
+  const dc=document.getElementById('detCopy');
+  dc.innerHTML='<option value="-">別のフォルダにコピー…</option>'+folderOptions().replace('フォルダに入れない','よく行く場所（フォルダの外）');dc.value='-';
   document.getElementById('detailModal').classList.add('show');
   sSelect();
 }
@@ -1625,6 +1631,19 @@ function delFromDetail(){
   };
   document.getElementById('confirmModal').classList.add('show');
   sErr();
+}
+// 同じ場所をもう1つ作って、選んだフォルダに入れる（元の場所はそのまま）
+function copyToFolder(fid){
+  const dc=document.getElementById('detCopy');
+  if(detIdx<0||fid==='-')return;
+  const q=JSON.parse(JSON.stringify(places[detIdx]));
+  if(fid)q.folder=fid;else delete q.folder;
+  q.done=false;
+  places.splice(detIdx+1,0,q);
+  if(sel>detIdx)sel++;
+  save();render();sAdd();dc.value='-';
+  const f=folders.find(x=>x.id===fid);
+  toast('📋 '+(f?f.name:'よく行く場所')+' にコピーしました');
 }
 function moveFolder(fid){
   if(detIdx<0)return;
