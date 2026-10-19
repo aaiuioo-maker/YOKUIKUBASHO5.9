@@ -337,19 +337,11 @@ body{position:fixed;inset:0;width:100%}
 .ah-btn.ok{color:#fff;background:var(--app-blue);font-weight:700;border-radius:10px;text-align:center;min-width:72px;padding:9px 12px}
 /* 入力欄の部分：キーボードが出て画面が狭くなったら、ここだけスクロールする */
 .add-body{max-height:calc(var(--vvh,100vh) - 90px - env(safe-area-inset-top));overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
-/* 写真から読み取る */
-.ocr-row{padding:10px 14px;border-bottom:.5px solid var(--app-border)}
-.ocr-btn{width:100%;border:1.5px dashed #9cb8e6;background:#f3f7ff;color:var(--app-blue);border-radius:12px;padding:11px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer}
-.ocr-btn:disabled{opacity:.6}
-.ocr-status{font-size:12px;color:var(--app-sub);margin-top:6px;line-height:1.5}
-.ocr-status:empty{display:none}
-.ocr-lines{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.ocr-lines:empty{display:none}
-.ocr-tg{width:100%;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--app-sub)}
-.ocr-t{border:1px solid #c8d6ee;background:#fff;color:var(--app-blue);border-radius:8px;padding:5px 10px;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer}
-.ocr-t.on{background:var(--app-blue);border-color:var(--app-blue);color:#fff}
-.ocr-chip{border:1px solid var(--app-border);background:#fafafa;color:#333;border-radius:8px;padding:6px 9px;font-size:13px;font-family:inherit;text-align:left;cursor:pointer;max-width:100%}
-.ocr-chip:active{background:#e6eefc}
+/* 郵便番号から住所 */
+.zip-msg{font-size:12px;color:var(--app-sub);padding:0 0 8px;line-height:1.5}
+.zip-msg:empty{display:none}
+.zip-msg.ok{color:var(--app-green)}
+.zip-msg.ng{color:var(--app-red)}
 .add-sheet .ff input{font-size:16px}
 
 /* アイコン選択 */
@@ -781,13 +773,6 @@ body{position:fixed;inset:0;width:100%}
           <button class="ah-btn ok ripple-host" id="formOk" onclick="addPlace()">登録</button>
         </div>
         <div class="add-body">
-        <!-- 写真から読み取る：伝票などの写真の文字を読み取って、名前と住所を自動で入れる（読み取りはスマホの中だけで行う） -->
-        <div class="ocr-row">
-          <button type="button" class="ocr-btn ripple-host" id="ocrBtn" onclick="document.getElementById('ocrFile').click()">📷 写真から読み取る</button>
-          <input type="file" id="ocrFile" accept="image/*" hidden onchange="ocrPick(event)">
-          <div class="ocr-status" id="ocrStatus"></div>
-          <div class="ocr-lines" id="ocrLines"></div>
-        </div>
         <div class="ff ic-row" onclick="openPicker('form')">
           <label>アイコン</label>
           <div class="ic-row-body"><span class="ic-cur" id="fIconCur">📍</span><span class="ic-row-txt" id="fIconTxt">おまかせ（名前から自動）</span><span class="ic-row-arr">変更 ›</span></div>
@@ -795,6 +780,11 @@ body{position:fixed;inset:0;width:100%}
         <div class="ff">
           <label>場所の名前（空なら住所を使います）</label>
           <input id="fName" type="text" oninput="updateFormIcon()" placeholder="例：京都中央郵便局">
+        </div>
+        <div class="ff">
+          <label>郵便番号（7けた入れると、下の住所に自動で入ります）</label>
+          <input id="fZip" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="例：600-8216" oninput="zipInput()">
+          <div class="zip-msg" id="zipMsg"></div>
         </div>
         <div class="ff">
           <label>住所</label>
@@ -1880,7 +1870,7 @@ function toggleForm(fid,ei){
     document.getElementById('fName').value=p?p.name:'';
     document.getElementById('fAddr').value=p?(p.addr||''):'';
     formTime=p&&p.time||'';showTime();
-    ocrReset();
+    zipReset();
     const fs=document.getElementById('fFolder');
     // 下の「場所を追加」から開いたときは、開いているフォルダ（無ければ一番上のフォルダ）に入れる
     const def=p?folderOf(p):(fid||(folders.find(f=>openFolders.includes(f.id))||folders.find(f=>!f.hidden&&!f.trashed)||{}).id||'');
@@ -1922,108 +1912,55 @@ function setDetTime(t){
 function timeBadge(t){
   return t==='18-20'?'<span class="pi-time t18">18-20</span>':t==='19-21'?'<span class="pi-time t19">19-21</span>':'';
 }
-/* ── 写真から読み取る（文字の読み取りは Tesseract.js。写真はスマホの中だけで読み、どこにも送らない） ──
-   伝票などの写真から、名前（「○○様」の行）と住所（都道府県・市区町村・番地の行）を見つけて入れる。
-   読み取った行は一覧で出し、タップで名前・住所に入れ直せる */
-let ocrWorkerP=null,ocrLinesCache=[],ocrTarget='name';
-function loadScript(src){
-  return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});
-}
-function ocrSetStatus(t){document.getElementById('ocrStatus').textContent=t;}
-function ocrReset(){ocrSetStatus('');document.getElementById('ocrLines').innerHTML='';ocrLinesCache=[];}
-// 読み取りの道具を用意する（初回だけ、日本語の文字のデータ 約15MB を読み込む）
-function getOcrWorker(){
-  if(ocrWorkerP)return ocrWorkerP;
-  ocrWorkerP=(async()=>{
-    if(!window.Tesseract)await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
-    return Tesseract.createWorker('jpn',1,{logger:m=>{
-      if(m.status==='recognizing text')ocrSetStatus('読み取り中… '+Math.round((m.progress||0)*100)+'%');
-      else if(/load|initializ/.test(m.status||''))ocrSetStatus('準備中…（初めての時だけ少し時間がかかります）');
-    }});
-  })().catch(e=>{ocrWorkerP=null;throw e;});
-  return ocrWorkerP;
-}
-// 読み取りやすいように、写真を小さくして白黒・くっきりにする
-function ocrPrepImage(file){
-  return new Promise((res,rej)=>{
-    const img=new Image();
-    img.onload=()=>{
-      const max=2000,s=Math.min(1,max/Math.max(img.width,img.height));
-      const w=Math.round(img.width*s),h=Math.round(img.height*s);
-      const c=document.createElement('canvas');c.width=w;c.height=h;
-      const x=c.getContext('2d');x.drawImage(img,0,0,w,h);
-      const d=x.getImageData(0,0,w,h),p=d.data;
-      for(let i=0;i<p.length;i+=4){
-        let g=.299*p[i]+.587*p[i+1]+.114*p[i+2];
-        g=(g-128)*1.35+128;g=g<0?0:g>255?255:g;
-        p[i]=p[i+1]=p[i+2]=g;
-      }
-      x.putImageData(d,0,0);URL.revokeObjectURL(img.src);res(c);
-    };
-    img.onerror=rej;img.src=URL.createObjectURL(file);
+/* ── 郵便番号から住所（近畿発の運賃表と同じデータ：japan-postal-code。頭3けたごとのファイルを読み込む） ──
+   郵便番号を7けた入れると、「都道府県＋市区町村＋町名」を住所の欄に入れる。番地はそのあとに続けて入れる */
+const PREF_FULL=[null,'北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'];
+const zipCache={},zipWait={};
+// 読み込んだファイルは zipdata({...}) を呼ぶ。中の郵便番号の頭3けたで、どのファイルかを見分ける
+window.zipdata=function(d){
+  const k=Object.keys(d)[0];if(!k)return;
+  const pre=k.slice(0,3);zipCache[pre]=d;
+  (zipWait[pre]||[]).forEach(f=>f.ok(d));delete zipWait[pre];
+};
+function zipLoad(pre){
+  return new Promise((ok,ng)=>{
+    if(zipCache[pre])return ok(zipCache[pre]);
+    const first=!zipWait[pre];(zipWait[pre]=zipWait[pre]||[]).push({ok,ng});
+    if(!first)return;
+    const sc=document.createElement('script');
+    sc.src=`https://cdn.jsdelivr.net/npm/japan-postal-code@0.3.0/zipdata/zip-${pre}.js`;
+    sc.onerror=()=>{(zipWait[pre]||[]).forEach(f=>f.ng(new Error('load')));delete zipWait[pre];};
+    // 存在しない頭3けた（ファイルがない）ときは、読み込み後もデータが来ないので、少し待って「見つからない」にする
+    sc.onload=()=>setTimeout(()=>{if(zipWait[pre]){zipCache[pre]={};zipWait[pre].forEach(f=>f.ok({}));delete zipWait[pre];}},50);
+    document.head.appendChild(sc);
   });
 }
-// 読み取った1行をきれいにする（日本語の文字のあいだに入った余計な空白を消す）
-function ocrClean(s){
-  for(let k=0;k<3;k++)s=s.replace(/([^\x00-\x7F]) +([^\x00-\x7F])/g,'$1$2');
-  // 数字と日本語のあいだの空白も消す（例：「203 号室」→「203号室」「町 46-1」→「町46-1」）
-  s=s.replace(/([0-9０-９]) +([^\x00-\x7F])/g,'$1$2').replace(/([^\x00-\x7F]) +([0-9０-９])/g,'$1$2');
-  return s.replace(/[|｜]/g,'').replace(/\s+/g,' ').trim();
-}
-const OCR_ZIP=/〒?\s*([0-9０-９]{3})\s*[-ー－‐−]\s*([0-9０-９]{4})/;
-function ocrParse(text){
-  const lines=text.split('\n').map(ocrClean).filter(l=>l.length>=2);
-  let name='',addr='',ai=-1;
-  for(let i=0;i<lines.length&&ai<0;i++){
-    const l=lines[i].replace(OCR_ZIP,'');
-    if(/(都|道|府|県).*(市|区|町|村|郡)|(市|区|郡).*(町|丁目|番|条|[0-9０-９])/.test(l))ai=i;
-  }
-  if(ai>=0){
-    addr=lines[ai].replace(OCR_ZIP,'').replace(/^(ご?住所|お届け先|届け先)[:：]?\s*/,'').trim();
-    // 次の行が番地・建物名の続きなら、つなげる
-    const nx=lines[ai+1];
-    if(nx&&nx.length<=30&&!/様|殿|御中|TEL|Tel|電話|☎/.test(nx)&&/[0-9０-９丁目番号ビルマンションハイツコーポ荘階室号館F]/.test(nx))addr+=' '+nx;
-  }
-  const nl=lines.find(l=>/様|殿|御中/.test(l));
-  if(nl)name=nl.replace(/\s*(様|殿|御中).*$/,'').replace(/^(お名前|氏名|お届け先|届け先)[:：]?\s*/,'').trim();
-  return {name,addr,lines};
-}
-async function ocrPick(e){
-  const f=e.target.files[0];e.target.value='';if(!f)return;
-  const btn=document.getElementById('ocrBtn');btn.disabled=true;
-  document.getElementById('ocrLines').innerHTML='';
+function zipMsg(t,cls){const el=document.getElementById('zipMsg');el.textContent=t;el.className='zip-msg'+(cls?' '+cls:'');}
+let zipAuto='';   // 前に自動で入れた住所（郵便番号を入れ直したら、そこだけ置きかえる）
+async function zipInput(){
+  const el=document.getElementById('fZip');
+  // 全角の数字も半角にして、数字だけ取り出す
+  const d=el.value.replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/\D/g,'').slice(0,7);
+  if(d.length<7){zipMsg('');return;}
+  zipMsg('住所を探しています…');
   try{
-    ocrSetStatus('準備中…');
-    const [w,c]=await Promise.all([getOcrWorker(),ocrPrepImage(f)]);
-    ocrSetStatus('読み取り中…');
-    const {data}=await w.recognize(c);
-    const r=ocrParse(data.text||'');
-    if(!r.lines.length){sErr();ocrSetStatus('文字が見つかりませんでした。明るい所で、文字に近づいて撮ってみてください');return;}
-    if(r.name){document.getElementById('fName').value=r.name;updateFormIcon();}
-    if(r.addr)document.getElementById('fAddr').value=r.addr;
-    const got=[r.name&&'名前',r.addr&&'住所'].filter(Boolean);
-    ocrSetStatus((got.length?got.join('と')+'を入れました。':'名前と住所を見つけられませんでした。')+'まちがいがないか確かめてください。下の行をタップすると入れ直せます');
-    ocrTarget=r.name&&!r.addr?'addr':'name';
-    ocrShowLines(r.lines);
-    sAdd();
-  }catch(err){
-    sErr();ocrSetStatus('読み取れませんでした。電波を確かめて、もう一度試してください');
-  }finally{btn.disabled=false;}
+    const data=await zipLoad(d.slice(0,3));
+    if(document.getElementById('fZip').value.replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/\D/g,'').slice(0,7)!==d)return;
+    const v=data[d];
+    if(!v){zipMsg('この郵便番号は見つかりませんでした','ng');sErr();return;}
+    const a=(PREF_FULL[v[0]]||'')+(v[1]||'')+(v[2]||'');
+    const fa=document.getElementById('fAddr');
+    // 住所が空か、前に自動で入れたものなら置きかえる。自分で書いた住所があれば、先頭の部分だけ入れかえる
+    if(!fa.value||fa.value===zipAuto)fa.value=a;
+    else if(zipAuto&&fa.value.startsWith(zipAuto))fa.value=a+fa.value.slice(zipAuto.length);
+    else fa.value=a;
+    zipAuto=a;
+    zipMsg(a+' を入れました。番地を続けて入れてください','ok');sAdd();
+    // 住所の欄の最後にカーソルを置いて、すぐ番地を打てるようにする
+    fa.focus();try{fa.setSelectionRange(fa.value.length,fa.value.length);}catch(_){}
+  }catch(_){zipMsg('住所のデータを読み込めませんでした（電波を確かめてください）','ng');sErr();}
 }
-// 読み取った行の一覧。上のボタンで「名前へ」「住所へ」を選んでから、行をタップする
-function ocrShowLines(lines){
-  ocrLinesCache=lines;
-  document.getElementById('ocrLines').innerHTML=
-    `<div class="ocr-tg">タップした行を：<button type="button" class="ocr-t${ocrTarget==='name'?' on':''}" onclick="ocrSetTarget('name')">名前へ</button><button type="button" class="ocr-t${ocrTarget==='addr'?' on':''}" onclick="ocrSetTarget('addr')">住所へ</button></div>`+
-    lines.map((l,i)=>`<button type="button" class="ocr-chip" onclick="ocrUse(${i})">${esc(l)}</button>`).join('');
-}
-function ocrSetTarget(t){ocrTarget=t;ocrShowLines(ocrLinesCache);sCursor();}
-function ocrUse(i){
-  const l=ocrLinesCache[i];if(l==null)return;
-  if(ocrTarget==='name'){document.getElementById('fName').value=l.replace(/\s*(様|殿|御中).*$/,'');updateFormIcon();}
-  else document.getElementById('fAddr').value=l.replace(OCR_ZIP,'').trim();
-  sSelect();toast((ocrTarget==='name'?'名前':'住所')+'に入れました');
-}
+function zipReset(){document.getElementById('fZip').value='';zipMsg('');zipAuto='';}
 function addPlace(){
   const addr=document.getElementById('fAddr').value.trim();
   const name=document.getElementById('fName').value.trim()||addr;
