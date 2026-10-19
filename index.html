@@ -1958,7 +1958,10 @@ async function zipInput(){
     zipMsg(a+' を入れました。番地を続けて入れてください','ok');sAdd();
     // 住所の欄の最後にカーソルを置いて、すぐ番地を打てるようにする
     fa.focus();try{fa.setSelectionRange(fa.value.length,fa.value.length);}catch(_){}
-  }catch(_){zipMsg('住所のデータを読み込めませんでした（電波を確かめてください）','ng');sErr();}
+  }catch(_){
+    // 電波があるのに読み込めないのは、その頭3けたの郵便番号がない（ファイルがない）とき
+    zipMsg(navigator.onLine===false?'住所のデータを読み込めませんでした（電波を確かめてください）':'この郵便番号は見つかりませんでした','ng');sErr();
+  }
 }
 function zipReset(){document.getElementById('fZip').value='';zipMsg('');zipAuto='';}
 function addPlace(){
