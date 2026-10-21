@@ -2009,7 +2009,7 @@ async function zipInput(){
     else if(zipAuto&&fa.value.startsWith(zipAuto))fa.value=a+fa.value.slice(zipAuto.length);
     else fa.value=a;
     zipAuto=a;
-    zipMsg(a+' を入れました','ok');sAdd();
+    zipMsg('');sAdd();
     // 住所の欄の最後にカーソルを置いて、すぐ番地を打てるようにする
     fa.focus();try{fa.setSelectionRange(fa.value.length,fa.value.length);}catch(_){}
   }catch(_){
