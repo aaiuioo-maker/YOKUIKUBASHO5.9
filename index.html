@@ -177,6 +177,8 @@ body{position:fixed;inset:0;width:100%}
 .pi-time{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;border-radius:5px;padding:1px 5px;margin-right:5px;vertical-align:1px;line-height:1.4}
 .pi-time.t18{background:#e02020}
 .pi-time.t19{background:#1a9a3a}
+.pi-time.tx{background:#5a6270}
+.det-tm-in{width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:8px;padding:8px;font-size:16px;font-family:inherit;margin-top:6px}
 .pi.done .pi-time{opacity:.55}
 /* 追加・編集画面の配達時間ボタン */
 .tm-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:6px 0 10px}
@@ -817,6 +819,7 @@ body{position:fixed;inset:0;width:100%}
             <button type="button" class="tm-btn t18" data-t="18-20" onclick="pickTime('18-20')">18時〜20時</button>
             <button type="button" class="tm-btn t19" data-t="19-21" onclick="pickTime('19-21')">19時〜21時</button>
           </div>
+          <input id="fTime" type="text" placeholder="ほかの時間や備考を書く（例：午前中）" oninput="typeTime(this.value)">
         </div>
         <div class="ff">
           <label>入れる場所</label>
@@ -912,6 +915,7 @@ body{position:fixed;inset:0;width:100%}
             <button type="button" class="tm-btn t18 det-tm" data-t="18-20" onclick="setDetTime('18-20')">18時〜20時</button>
             <button type="button" class="tm-btn t19 det-tm" data-t="19-21" onclick="setDetTime('19-21')">19時〜21時</button>
           </div>
+          <input id="dTime" type="text" class="det-tm-in" placeholder="ほかの時間や備考を書く" onchange="typeDetTime(this.value)">
         </div>
       </div>
       <div class="det-row" id="detNoteRow">
@@ -1933,24 +1937,34 @@ function editFromDetail(){
 }
 // 配達時間（備考）：18時〜20時（赤）／19時〜21時（緑）。もう一度押すと外れる
 let formTime='';
+const isPreset=t=>t==='18-20'||t==='19-21';
 function pickTime(t){formTime=formTime===t?'':t;showTime();sCursor();}
 function showTime(){
   document.querySelectorAll('.tm-btn:not(.det-tm)').forEach(b=>b.classList.toggle('on',b.dataset.t===formTime));
+  document.getElementById('fTime').value=isPreset(formTime)?'':formTime;
 }
+// 文字で書いた時間・備考（ボタンの選択は外れる）
+function typeTime(v){formTime=v.trim();document.querySelectorAll('.tm-btn:not(.det-tm)').forEach(b=>b.classList.remove('on'));}
 // 詳細画面の時間ボタン：押すとすぐその場所の配達時間が変わる（もう一度押すと外れる）
 function showDetTime(){
   const p=places[detIdx];
   document.querySelectorAll('.det-tm').forEach(b=>b.classList.toggle('on',!!p&&b.dataset.t===p.time));
+  document.getElementById('dTime').value=p&&p.time&&!isPreset(p.time)?p.time:'';
+}
+function typeDetTime(v){
+  const p=places[detIdx];if(!p)return;v=v.trim();
+  if(v)p.time=v;else delete p.time;
+  save();render();showDetTime();toast(v?v+' にしました':'時間の指定を外しました');
 }
 function setDetTime(t){
   const p=places[detIdx];if(!p)return;
   if(p.time===t)delete p.time;else p.time=t;
   save();render();showDetTime();
-  if(p.time){sAdd();toast((t==='18-20'?'18時〜20時':'19時〜21時')+' にしました');}
+  if(p.time){sAdd();toast((t==='18-20'?'18時〜20時':t==='19-21'?'19時〜21時':t)+' にしました');}
   else{sCursor();toast('時間の指定を外しました');}
 }
 function timeBadge(t){
-  return t==='18-20'?'<span class="pi-time t18">18-20</span>':t==='19-21'?'<span class="pi-time t19">19-21</span>':'';
+  return t==='18-20'?'<span class="pi-time t18">18-20</span>':t==='19-21'?'<span class="pi-time t19">19-21</span>':t?'<span class="pi-time tx">'+esc(t)+'</span>':'';
 }
 /* ── 郵便番号から住所（近畿発の運賃表と同じデータ：japan-postal-code。頭3けたごとのファイルを読み込む） ──
    郵便番号を7けた入れると、「都道府県＋市区町村＋町名」を住所の欄に入れる。番地はそのあとに続けて入れる */
@@ -1995,7 +2009,7 @@ async function zipInput(){
     else if(zipAuto&&fa.value.startsWith(zipAuto))fa.value=a+fa.value.slice(zipAuto.length);
     else fa.value=a;
     zipAuto=a;
-    zipMsg(a+' を入れました。番地を続けて入れてください','ok');sAdd();
+    zipMsg(a+' を入れました','ok');sAdd();
     // 住所の欄の最後にカーソルを置いて、すぐ番地を打てるようにする
     fa.focus();try{fa.setSelectionRange(fa.value.length,fa.value.length);}catch(_){}
   }catch(_){
