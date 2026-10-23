@@ -282,8 +282,8 @@ body{position:fixed;inset:0;width:100%}
 .mv-loc{position:absolute;right:10px;bottom:28px;z-index:1000;width:44px;height:44px;border:none;border-radius:12px;background:#fff;color:#888;box-shadow:0 2px 8px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .mv-loc.on{color:var(--app-blue)}
 .mv-loc svg{width:24px;height:24px}
-/* 現在地の青い丸 */
-.mv-me{width:18px;height:18px;border-radius:50%;background:#1a7cf0;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.15),0 1px 4px rgba(0,0,0,.4)}
+/* 現在地の赤い丸 */
+.mv-me{width:18px;height:18px;border-radius:50%;background:#ff2d2d;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.15),0 1px 4px rgba(0,0,0,.4)}
 .mv-pop{font-family:-apple-system,'Helvetica Neue',sans-serif;min-width:180px}
 .mv-pop b{font-size:14px}
 .mv-pop .addr{font-size:12px;color:#666;margin:2px 0 8px}
@@ -868,7 +868,7 @@ body{position:fixed;inset:0;width:100%}
       <button class="mv-tab" data-k="photo" onclick="setBase('photo')">航空写真</button>
       <button class="mv-tab" data-k="pale" onclick="setBase('pale')">淡色</button>
     </div>
-    <!-- 現在地（右下）。押すと自分の位置を青い丸で出して、そこへ移動する -->
+    <!-- 現在地（右下）。押すと自分の位置を赤い丸で出して、そこへ移動する -->
     <button class="mv-loc" id="mvLoc" onclick="locateMe()" aria-label="現在地"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3 3 10.5l7.5 2.9L13.4 21z"/></svg></button>
   </div>
 </div>
@@ -1853,7 +1853,7 @@ function startLoc(){
   mvWatch=navigator.geolocation.watchPosition(pos=>{
     const ll=[pos.coords.latitude,pos.coords.longitude],r=pos.coords.accuracy;
     if(!mvMe){
-      mvAcc=L.circle(ll,{radius:r,color:'#1a7cf0',weight:1,fillColor:'#1a7cf0',fillOpacity:.12,interactive:false}).addTo(mvMap);
+      mvAcc=L.circle(ll,{radius:r,color:'#ff2d2d',weight:1,fillColor:'#ff2d2d',fillOpacity:.12,interactive:false}).addTo(mvMap);
       mvMe=L.marker(ll,{icon:L.divIcon({className:'',html:'<div class="mv-me"></div>',iconSize:[18,18],iconAnchor:[9,9]}),interactive:false,zIndexOffset:1000}).addTo(mvMap);
     }else{mvMe.setLatLng(ll);mvAcc.setLatLng(ll).setRadius(r);}
     if(mvFollow){mvFollow=false;mvMap.setView(ll,Math.max(mvMap.getZoom(),16));}
