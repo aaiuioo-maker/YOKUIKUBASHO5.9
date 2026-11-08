@@ -371,6 +371,9 @@ body{position:fixed;inset:0;width:100%}
 .zip-msg.ok{color:var(--app-green)}
 .zip-msg.ng{color:var(--app-red)}
 .add-sheet .ff input{font-size:16px}
+/* 場所の追加：入力欄ごとに枠をつける */
+.add-sheet .ff input,.add-sheet .ff select{border:1.5px solid #c4c4cc;border-radius:10px;padding:9px 11px;margin:4px 0 10px;background:#fff;box-sizing:border-box}
+.add-sheet .ff input:focus,.add-sheet .ff select:focus{border-color:var(--app-blue);box-shadow:0 0 0 3px rgba(0,122,255,.15)}
 
 /* アイコン選択 */
 .ic-row{cursor:pointer}
@@ -819,12 +822,8 @@ body{position:fixed;inset:0;width:100%}
           <input id="fAddr" type="text" placeholder="例：京都市下京区東塩小路町843">
         </div>
         <div class="ff">
-          <label>備考（配達時間）</label>
-          <div class="tm-row">
-            <button type="button" class="tm-btn t18" data-t="18-20" onclick="pickTime('18-20')">18時〜20時</button>
-            <button type="button" class="tm-btn t19" data-t="19-21" onclick="pickTime('19-21')">19時〜21時</button>
-          </div>
-          <input id="fTime" type="text" placeholder="ほかの時間や備考を書く（例：午前中）" oninput="typeTime(this.value)">
+          <label>備考</label>
+          <input id="fTime" type="text" placeholder="例：午前中、裏口から" oninput="typeTime(this.value)">
         </div>
         <div class="ff">
           <label>入れる場所</label>
@@ -916,13 +915,9 @@ body{position:fixed;inset:0;width:100%}
         <div class="det-val" id="detAddr"></div>
       </div>
       <div class="det-row" id="detTimeRow" style="align-items:center">
-        <div class="det-key" style="padding-top:0">時間</div>
+        <div class="det-key" style="padding-top:0">備考</div>
         <div class="det-val">
-          <div class="tm-row" style="padding:0">
-            <button type="button" class="tm-btn t18 det-tm" data-t="18-20" onclick="setDetTime('18-20')">18時〜20時</button>
-            <button type="button" class="tm-btn t19 det-tm" data-t="19-21" onclick="setDetTime('19-21')">19時〜21時</button>
-          </div>
-          <input id="dTime" type="text" class="det-tm-in" placeholder="ほかの時間や備考を書く" onchange="typeDetTime(this.value)">
+          <input id="dTime" type="text" class="det-tm-in" placeholder="備考を書く" onchange="typeDetTime(this.value)" style="margin-top:0">
         </div>
       </div>
       <div class="det-row" id="detNoteRow">
@@ -1044,7 +1039,7 @@ function opKey(d){
     'フォルダを開いて「地図で見る」で、全部の場所にピンが立ちます',
     '「≡」をつかんでフォルダに持っていくと、そのフォルダに入ります',
     '終わった場所はチェックを付けると、灰色になります',
-    '配達時間は 18-20 がオレンジ、19-21 が緑で出ます',
+    '「備考」に書いたことは、一覧の名前の横に出ます',
     '「Appleルート」で、フォルダの場所を順番に回るルートが出ます',
     '詳細画面は、下にスワイプすると閉じます',
     'いらないフォルダは「しまう」で、一時的に見えなくできます'];
@@ -1826,7 +1821,7 @@ async function openFolderMap(fi){
   const pts=[],miss=[];
   found.forEach((g,k)=>{
     if(!g){miss.push(ps[k].name);return;}
-    L.marker([g.lat,g.lon],{icon:L.divIcon({className:'',html:`<div class="mv-pin${ps[k].time==='18-20'?' t18':ps[k].time==='19-21'?' t19':''}">${k+1}</div>`,iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-15]})})
+    L.marker([g.lat,g.lon],{icon:L.divIcon({className:'',html:`<div class="mv-pin">${k+1}</div>`,iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-15]})})
       .bindPopup(popupHTML(k)).addTo(mvLayer);
     pts.push([g.lat,g.lon]);
   });
@@ -1983,7 +1978,7 @@ function editFromDetail(){
 }
 // 配達時間（備考）：18時〜20時（赤）／19時〜21時（緑）。もう一度押すと外れる
 let formTime='';
-const isPreset=t=>t==='18-20'||t==='19-21';
+const isPreset=t=>false;
 function pickTime(t){formTime=formTime===t?'':t;showTime();sCursor();}
 function showTime(){
   document.querySelectorAll('.tm-btn:not(.det-tm)').forEach(b=>b.classList.toggle('on',b.dataset.t===formTime));
@@ -2010,7 +2005,7 @@ function setDetTime(t){
   else{sCursor();toast('時間の指定を外しました');}
 }
 function timeBadge(t){
-  return t==='18-20'?'<span class="pi-time t18">18-20</span>':t==='19-21'?'<span class="pi-time t19">19-21</span>':t?'<span class="pi-time tx">'+esc(t)+'</span>':'';
+  return t?'<span class="pi-time tx">'+esc(t)+'</span>':'';
 }
 /* ── 郵便番号から住所（近畿発の運賃表と同じデータ：japan-postal-code。頭3けたごとのファイルを読み込む） ──
    郵便番号を7けた入れると、「都道府県＋市区町村＋町名」を住所の欄に入れる。番地はそのあとに続けて入れる */
