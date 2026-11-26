@@ -355,6 +355,8 @@ body{position:fixed;inset:0;width:100%}
 .det-val{font-size:14px;color:var(--app-text);flex:1;line-height:1.5}
 .det-map-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
 .det-map-row .sh-btn{padding:12px 2px;font-size:13px;white-space:nowrap}
+/* ゼンリン住宅地図のボタンは横いっぱい */
+.det-map-row .zr,.mv-pop-btns .zr{grid-column:1/-1}
 
 /* 追加シート：上から出す（キーボードに隠れない） */
 .overlay.top{align-items:flex-start}
@@ -954,6 +956,7 @@ body{position:fixed;inset:0;width:100%}
       <button class="sh-btn blue ripple-host" style="background:#ea4335" onclick="openMapDirect('google')">Googleマップ</button>
       <button class="sh-btn blue ripple-host" style="background:#7b2fd0" onclick="openMapDirect('yahoo')">Yahoo!マップ</button>
       <button class="sh-btn blue ripple-host" style="background:#e8790c" onclick="openMapDirect('copy')">住所をコピー</button>
+      <button class="sh-btn blue ripple-host zr" style="background:#00897b" onclick="openMapDirect('zenrin')">ゼンリン住宅地図</button>
     </div>
     <div class="sh-btns">
       <button class="sh-btn gray ripple-host" style="color:var(--app-blue)" onclick="editFromDetail()">名前・住所を編集</button>
@@ -1673,12 +1676,23 @@ function moveFolder(fid){
   const f=folders.find(x=>x.id===fid);
   toast(f?'📁 '+f.name+' に入れました':'フォルダから出しました');
 }
+// ゼンリン住宅地図スマートフォンのページ（URLが変わったらここを書きかえる）
+const ZENRIN_URL='https://app.zip-site.com/smt/app/index.htm';
 function goMap(type,p){
   const q=encodeURIComponent(p.addr||p.name);
   if(type==='copy'){
     // ゼンリン住宅地図など、住所を貼り付けて探すアプリ用。コピーするだけ
     copyText(p.addr||p.name);
     sAdd();toast('住所をコピーしました');
+    return;
+  }
+  if(type==='zenrin'){
+    // ゼンリン住宅地図スマートフォン：その場所を直接は出せないので、住所をコピーしてからページを開く
+    //   （開いたら住所検索に貼り付ける）
+    copyText(p.addr||p.name);
+    sOpen();toast('住所をコピーしました。ゼンリンの住所検索に貼り付けてください');
+    const w=window.open(ZENRIN_URL,'_blank');
+    if(!w)window.location.href=ZENRIN_URL;
     return;
   }
   sOpen();
@@ -1803,6 +1817,7 @@ function popupHTML(k){
       <button style="background:#ea4335" onclick="goMap('google',mvList[${k}])">Google</button>
       <button style="background:#7b2fd0" onclick="goMap('yahoo',mvList[${k}])">Yahoo!</button>
       <button style="background:#e8790c" onclick="goMap('copy',mvList[${k}])">住所コピー</button>
+      <button class="zr" style="background:#00897b" onclick="goMap('zenrin',mvList[${k}])">ゼンリン住宅地図</button>
     </div></div>`;
 }
 async function openFolderMap(fi){
