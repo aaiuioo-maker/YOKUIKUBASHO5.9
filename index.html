@@ -119,7 +119,7 @@ body{position:fixed;inset:0;width:100%}
   padding:calc(env(safe-area-inset-top) + 8px) 20px 8px;background:var(--app-surface);
   border-bottom:.5px solid var(--app-border);
 }
-.hdr-title{font-size:26px;font-weight:700;letter-spacing:-.5px}
+.hdr-title{font-size:22px;font-weight:700;letter-spacing:-.5px}
 .hdr-sub{font-size:12px;color:var(--app-sub);margin-top:2px}
 
 /* マップボタンパネル：固定 */
@@ -154,14 +154,14 @@ body{position:fixed;inset:0;width:100%}
 .place-list.scrolly{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .place-list > .pi{flex-shrink:0}   /* 行がつぶれないようにする */
 .pi{
-  background:var(--app-surface);padding:10px 12px;
-  display:flex;align-items:center;gap:8px;cursor:pointer;
+  background:var(--app-surface);padding:7px 10px;
+  display:flex;align-items:center;gap:6px;cursor:pointer;
   transition:background .1s;position:relative;
 }
 .pi.sel{background:#eef4ff}
 /* 選んでいる場所は、行全体を赤い四角で囲む（チェックを付けて灰色になっていても分かるように） */
 .pi.sel::before{content:'';position:absolute;inset:0;border:3px solid #e02020;border-radius:4px;pointer-events:none;z-index:2}
-.pi-icon{width:34px;height:34px;border-radius:9px;background:#e8e8f0;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.pi-icon{width:28px;height:28px;border-radius:8px;background:#e8e8f0;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
 /* チェックボックス（終わったら付ける） */
 .pi-chk{width:26px;height:26px;flex-shrink:0;border-radius:7px;border:2px solid #b8b8c4;background:#fff;
   display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
@@ -175,18 +175,20 @@ body{position:fixed;inset:0;width:100%}
 .pi.done.sel{background:#dcdce0}
 /* 配達時間のしるし（18-20 はオレンジ、19-21 は緑） */
 .pi-time{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;border-radius:5px;padding:1px 5px;margin-right:5px;vertical-align:1px;line-height:1.4}
-.pi-time.t18{background:#f07800}
-.pi-time.t19{background:#1a9a3a}
+.pi-time.t19{background:#e02020}
 .pi-time.tx{background:#5a6270}
 .det-tm-in{width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:8px;padding:8px;font-size:16px;font-family:inherit;margin-top:6px}
 .pi.done .pi-time{opacity:.55}
 /* 追加・編集画面の配達時間ボタン */
 .tm-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:6px 0 10px}
 .tm-btn{border-radius:10px;padding:10px 4px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;background:#fff}
-.tm-btn.t18{border:2px solid #f07800;color:#f07800}
-.tm-btn.t19{border:2px solid #1a9a3a;color:#1a9a3a}
-.tm-btn.t18.on{background:#f07800;color:#fff}
-.tm-btn.t19.on{background:#1a9a3a;color:#fff}
+.tm-btn.t19{border:2px solid #e02020;color:#e02020}
+.tm-btn.t19.on{background:#e02020;color:#fff}
+/* 備考：左に 19時〜21時 のボタン、右に何でも書ける欄 */
+.tm-line{display:flex;align-items:center;gap:8px}
+.tm-line .tm-btn{flex-shrink:0;padding:8px 10px;font-size:14px;margin:4px 0 10px}
+.tm-line input{flex:1;min-width:0}
+.det-row .tm-line .tm-btn,.det-row .tm-line input{margin:0}
 .fd-clr{border:none;background:#ececf0;color:#555;border-radius:12px;padding:0 12px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;flex-shrink:0}
 /* しまったフォルダ（一覧に出さないフォルダ） */
 .hd-toggle{width:100%;border:none;background:transparent;color:var(--app-sub);font-size:13px;font-weight:600;font-family:inherit;padding:8px;cursor:pointer;margin-bottom:6px}
@@ -198,15 +200,20 @@ body{position:fixed;inset:0;width:100%}
 .hd-purge{border:none;background:#ffeeee;color:var(--app-red);border-radius:10px;padding:8px 10px;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0}
 .pi.sel .pi-icon{background:#d0e0ff}
 .pi-body{flex:1;min-width:0}
-.pi-name{font-size:16px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pi-addr{font-size:12.5px;color:var(--app-sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pi-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 住所は小さめの字で、長いときは2行まで折り返して全部見えるようにする */
+.pi-addr{font-size:10.5px;line-height:1.35;color:var(--app-sub);margin-top:1px;white-space:normal;word-break:break-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+/* 一覧の番号（地図のピンと同じ番号・同じ色。19-21 は赤） */
+.pi-num{width:20px;height:20px;border-radius:50%;background:var(--app-blue);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pi-num.t19{background:#e02020}
+.pi.done .pi-num{opacity:.5}
 .pi-note{font-size:11px;font-weight:400;color:var(--app-sub);background:#f0f0f0;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:1px}
 .pi.sel .pi-note{background:#dde8ff;color:var(--app-blue)}
 /* 詳細ボタン（押すと名前・住所・時間などの画面が開く） */
 .pi-arr{
   flex-shrink:0;border:1.5px solid #c8d6ee;background:#f3f7ff;color:var(--app-blue);
-  font-size:12.5px;font-weight:700;font-family:inherit;border-radius:8px;
-  padding:7px 8px;margin-left:2px;cursor:pointer;white-space:nowrap;
+  font-size:11.5px;font-weight:700;font-family:inherit;border-radius:8px;
+  padding:6px 7px;margin-left:2px;cursor:pointer;white-space:nowrap;
 }
 .pi-arr:active{background:#dde8ff}
 .pi.done .pi-arr{background:#ececf0;border-color:#c9c9cf;color:#77777f}
@@ -241,7 +248,7 @@ body{position:fixed;inset:0;width:100%}
 .fd{background:var(--app-surface);border-radius:12px;border:.5px solid var(--app-border);overflow:hidden}
 .fd-head{display:flex;align-items:center;gap:11px;padding:10px 12px;cursor:pointer}
 .fd-ic{width:40px;height:40px;border-radius:10px;background:#fff3d1;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0}
-.fd-name{flex:1;min-width:0;font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fd-name{flex:1;min-width:0;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fd-cnt{font-size:12px;color:var(--app-sub);background:#f0f0f0;border-radius:10px;padding:2px 8px;flex-shrink:0}
 .fd-chev{font-size:22px;color:#bbb;width:22px;text-align:center;flex-shrink:0;transition:transform .2s}
 .fd.open .fd-chev{transform:rotate(90deg)}
@@ -260,8 +267,8 @@ body{position:fixed;inset:0;width:100%}
 .fd.open{border-color:#f0c64a;box-shadow:0 0 0 1.5px #f0c64a}
 .fd.open .fd-head{background:#fff6d6}
 /* 長い名前は文字を小さくする */
-.pi-name.long,.fd-name.long{font-size:14px}
-.pi-name.xlong,.fd-name.xlong{font-size:12.5px}
+.pi-name.long,.fd-name.long{font-size:13px}
+.pi-name.xlong,.fd-name.xlong{font-size:12px}
 
 /* フォルダの場所をまとめて表示する地図 */
 #mapView{position:fixed;inset:0;z-index:350;background:var(--app-bg);display:none;flex-direction:column;font-family:-apple-system,'Helvetica Neue',sans-serif}
@@ -277,8 +284,10 @@ body{position:fixed;inset:0;width:100%}
 .mv-tab.on{background:var(--app-blue);color:#fff}
 .mv-pin{width:30px;height:30px;border-radius:50%;background:var(--app-blue);color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.35)}
 /* 配達時間を指定した場所のピン：18-20 はオレンジ、19-21 は緑（指定なしは青のまま） */
-.mv-pin.t18{background:#f07800}
-.mv-pin.t19{background:#1a9a3a}
+.mv-pin.t19{background:#e02020}
+/* ピンの吹き出しの「番号を変える」 */
+.mv-num{display:flex;align-items:center;gap:6px;margin:0 0 8px;font-size:12px;color:#444}
+.mv-num select{font-size:15px;font-family:inherit;padding:4px 6px;border:1.5px solid #c4c4cc;border-radius:8px;background:#fff}
 .mv-loc{position:absolute;right:10px;bottom:28px;z-index:1000;width:44px;height:44px;border:none;border-radius:12px;background:#fff;color:#888;box-shadow:0 2px 8px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .mv-loc.on{color:var(--app-blue)}
 .mv-loc svg{width:24px;height:24px}
@@ -823,7 +832,10 @@ body{position:fixed;inset:0;width:100%}
         </div>
         <div class="ff">
           <label>備考</label>
-          <input id="fTime" type="text" placeholder="例：午前中、裏口から" oninput="typeTime(this.value)">
+          <div class="tm-line">
+            <button type="button" class="tm-btn t19" data-t="19-21" onclick="pickTime('19-21')">19時〜21時</button>
+            <input id="fTime" type="text" placeholder="例：午前中、裏口から" oninput="typeTime(this.value)">
+          </div>
         </div>
         <div class="ff">
           <label>入れる場所</label>
@@ -917,7 +929,10 @@ body{position:fixed;inset:0;width:100%}
       <div class="det-row" id="detTimeRow" style="align-items:center">
         <div class="det-key" style="padding-top:0">備考</div>
         <div class="det-val">
-          <input id="dTime" type="text" class="det-tm-in" placeholder="備考を書く" onchange="typeDetTime(this.value)" style="margin-top:0">
+          <div class="tm-line">
+            <button type="button" class="tm-btn t19 det-tm" data-t="19-21" onclick="setDetTime('19-21')">19時〜21時</button>
+            <input id="dTime" type="text" class="det-tm-in" placeholder="備考を書く" onchange="typeDetTime(this.value)" style="margin-top:0">
+          </div>
         </div>
       </div>
       <div class="det-row" id="detNoteRow">
@@ -1039,7 +1054,7 @@ function opKey(d){
     'フォルダを開いて「地図で見る」で、全部の場所にピンが立ちます',
     '「≡」をつかんでフォルダに持っていくと、そのフォルダに入ります',
     '終わった場所はチェックを付けると、灰色になります',
-    '「備考」に書いたことは、一覧の名前の横に出ます',
+    '備考の「19時〜21時」を押すと、地図のピンが赤になります',
     '「Appleルート」で、フォルダの場所を順番に回るルートが出ます',
     '詳細画面は、下にスワイプすると閉じます',
     'いらないフォルダは「しまう」で、一時的に見えなくできます'];
@@ -1250,10 +1265,11 @@ function nameCls(s){const n=[...(s||'')].length;return n>13?' xlong':n>10?' long
 // 「マップで開く」の4つのボタン（Apple・Google・Yahoo!・コピー）。開いているフォルダの中に出す
 function mapRowHTML(){return document.getElementById('mapRowTpl').innerHTML;}
 function rowsHTML(list){
-  return '<div class="place-list">'+list.map(([p,i])=>`
+  return '<div class="place-list">'+list.map(([p,i],n)=>`
     <div class="pi${sel===i?' sel':''}${p.done?' done':''} ripple-host" data-i="${i}" onclick="selectPlace(${i})">
       <span class="pi-chk${p.done?' on':''}" role="checkbox" aria-checked="${p.done?'true':'false'}" aria-label="終わった" onclick="event.stopPropagation();toggleDone(${i})"></span>
       <span class="pi-handle" onclick="event.stopPropagation()">≡</span>
+      <span class="pi-num${p.time==='19-21'?' t19':''}">${n+1}</span>
       <div class="pi-icon">${iconHTML(emoji(p))}</div>
       <div class="pi-body">
         <div class="pi-name${nameCls(p.name)}">${esc(p.name)}${p.note?`<span class="pi-note">${esc(p.note)}</span>`:''}</div>
@@ -1782,7 +1798,9 @@ async function geocode(p){
 }
 function popupHTML(k){
   const p=mvList[k];
+  const opts=mvList.map((_,j)=>`<option value="${j}"${j===k?' selected':''}>${j+1}</option>`).join('');
   return `<div class="mv-pop"><b>${k+1}. ${esc(p.name)}</b><div class="addr">${timeBadge(p.time)}${esc(p.addr||'')}</div>
+    <label class="mv-num">番号を変える <select onchange="mvRenum(${k},+this.value)">${opts}</select> 番</label>
     <div class="mv-pop-btns">
       <button style="background:#1a6ed8" onclick="goMap('apple',mvList[${k}])">Apple</button>
       <button style="background:#ea4335" onclick="goMap('google',mvList[${k}])">Google</button>
@@ -1813,22 +1831,47 @@ async function openFolderMap(fi){
   mvLayer=L.layerGroup().addTo(mvMap);
   if(mvLocOn)startLoc();
   mvMap.invalidateSize();
-  mvList=ps;
+  mvList=ps;mvFi=fi;
   sub.textContent='場所を探しています…';
   const found=await Promise.all(ps.map(p=>geocode(p).catch(()=>null)));
   if(token!==mvToken)return;
   save();
-  const pts=[],miss=[];
-  found.forEach((g,k)=>{
-    if(!g){miss.push(ps[k].name);return;}
-    L.marker([g.lat,g.lon],{icon:L.divIcon({className:'',html:`<div class="mv-pin">${k+1}</div>`,iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-15]})})
-      .bindPopup(popupHTML(k)).addTo(mvLayer);
-    pts.push([g.lat,g.lon]);
-  });
+  const pts=drawPins();
   mvMap.invalidateSize();
   if(pts.length===1)mvMap.setView(pts[0],16);
   else if(pts.length)mvMap.fitBounds(pts,{padding:[40,40],maxZoom:17});
-  sub.textContent=pts.length+'か所'+(miss.length?'（見つからない：'+miss.join('、')+'）':'　ピンを押すと地図アプリで開けます');
+}
+// ピンを描く（番号は一覧の順番。19-21 の場所は赤、ほかは青）
+let mvFi=-1,mvMarks=[];
+function drawPins(){
+  mvLayer.clearLayers();mvMarks=[];
+  const pts=[],miss=[];
+  mvList.forEach((p,k)=>{
+    const g=p.geo&&p.geo.q===cleanAddr(p.addr||p.name)?p.geo:null;
+    if(!g){miss.push(p.name);mvMarks.push(null);return;}
+    const m=L.marker([g.lat,g.lon],{icon:L.divIcon({className:'',html:`<div class="mv-pin${p.time==='19-21'?' t19':''}">${k+1}</div>`,iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-15]})})
+      .bindPopup(popupHTML(k),{autoPanPaddingTopLeft:[10,60]}).addTo(mvLayer);
+    mvMarks.push(m);
+    pts.push([g.lat,g.lon]);
+  });
+  document.getElementById('mvSub').textContent=pts.length+'か所'+(miss.length?'（見つからない：'+miss.join('、')+'）':'　ピンを押すと番号を変えたり地図アプリで開けます');
+  return pts;
+}
+// 地図で番号を変える：k 番目の場所を to 番目に動かす。一覧の順番も同じに入れかわる
+function mvRenum(k,to){
+  if(mvFi<0||to===k)return;
+  const id=folders[mvFi].id;
+  const pos=[];places.forEach((p,i)=>{if(p.folder===id)pos.push(i);});
+  const items=pos.map(i=>places[i]);
+  if(items.length!==mvList.length)return;
+  const selP=sel>=0?places[sel]:null;
+  const [mv]=items.splice(k,1);items.splice(to,0,mv);
+  pos.forEach((i,j)=>{places[i]=items[j];});
+  if(selP)sel=places.indexOf(selP);
+  save();render();
+  mvList=items;
+  mvMap.closePopup();drawPins();
+  sSelect();toast(mv.name+' を '+(to+1)+'番にしました');
 }
 // 現在地：一度オンにしたら覚えておき、次に地図を開いたときも自動で出す
 let mvWatch=null,mvMe=null,mvAcc=null,mvFollow=false,mvLocOn=false;
@@ -1978,7 +2021,7 @@ function editFromDetail(){
 }
 // 配達時間（備考）：18時〜20時（赤）／19時〜21時（緑）。もう一度押すと外れる
 let formTime='';
-const isPreset=t=>false;
+const isPreset=t=>t==='19-21';
 function pickTime(t){formTime=formTime===t?'':t;showTime();sCursor();}
 function showTime(){
   document.querySelectorAll('.tm-btn:not(.det-tm)').forEach(b=>b.classList.toggle('on',b.dataset.t===formTime));
@@ -2005,7 +2048,7 @@ function setDetTime(t){
   else{sCursor();toast('時間の指定を外しました');}
 }
 function timeBadge(t){
-  return t?'<span class="pi-time tx">'+esc(t)+'</span>':'';
+  return t==='19-21'?'<span class="pi-time t19">19-21</span>':t?'<span class="pi-time tx">'+esc(t)+'</span>':'';
 }
 /* ── 郵便番号から住所（近畿発の運賃表と同じデータ：japan-postal-code。頭3けたごとのファイルを読み込む） ──
    郵便番号を7けた入れると、「都道府県＋市区町村＋町名」を住所の欄に入れる。番地はそのあとに続けて入れる */
