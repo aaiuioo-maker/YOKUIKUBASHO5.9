@@ -789,7 +789,6 @@ body{position:fixed;inset:0;width:100%}
         </button>
         <button class="add-btn ripple-host" onclick="openFolderForm()">📁 フォルダを作る</button>
       </div>
-      <div class="drag-tip">「≡」をつかんでフォルダに持っていくと入ります</div>
       <div id="hiddenSec"></div>
       <div id="trashSec"></div>
     </div>
@@ -1054,7 +1053,6 @@ function opKey(d){
   document.getElementById('ophello').textContent=h<5?'夜おそくまで、おつかれさまです':h<11?'おはようございます':h<17?'こんにちは':'おつかれさまです';
   const TIPS=[
     'フォルダを開いて「地図で見る」で、全部の場所にピンが立ちます',
-    '「≡」をつかんでフォルダに持っていくと、そのフォルダに入ります',
     '「地図で見る」のピンを押すと、番号を変えられます',
     '備考の「19時〜21時」を押すと、地図のピンが赤になります',
     '「Appleルート」で、フォルダの場所を順番に回るルートが出ます',
@@ -1269,9 +1267,7 @@ function mapRowHTML(){return document.getElementById('mapRowTpl').innerHTML;}
 function rowsHTML(list){
   return '<div class="place-list">'+list.map(([p,i],n)=>`
     <div class="pi${sel===i?' sel':''}${p.done?' done':''} ripple-host" data-i="${i}" onclick="selectPlace(${i})">
-      <span class="pi-handle" onclick="event.stopPropagation()">≡</span>
       <span class="pi-num${p.time==='19-21'?' t19':''}">${n+1}</span>
-      <div class="pi-icon">${iconHTML(emoji(p))}</div>
       <div class="pi-body">
         <div class="pi-name${nameCls(p.name)}">${esc(p.name)}${p.note?`<span class="pi-note">${esc(p.note)}</span>`:''}</div>
         <div class="pi-addr">${timeBadge(p.time)}${esc(p.addr)}</div>
