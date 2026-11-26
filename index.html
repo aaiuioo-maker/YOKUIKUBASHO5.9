@@ -186,7 +186,7 @@ body{position:fixed;inset:0;width:100%}
 .tm-btn.t19.on{background:#e02020;color:#fff}
 /* 備考：左に 19時〜21時 のボタン、右に何でも書ける欄 */
 .tm-line{display:flex;align-items:center;gap:8px}
-.tm-line .tm-btn{flex-shrink:0;padding:8px 10px;font-size:14px;margin:4px 0 10px}
+.tm-line .tm-btn{flex-shrink:0;padding:8px 10px;font-size:14px;margin:2px 0 4px}
 .tm-line input{flex:1;min-width:0}
 .det-row .tm-line .tm-btn,.det-row .tm-line input{margin:0}
 .fd-clr{border:none;background:#ececf0;color:#555;border-radius:12px;padding:0 12px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;flex-shrink:0}
@@ -380,8 +380,10 @@ body{position:fixed;inset:0;width:100%}
 .zip-msg.ok{color:var(--app-green)}
 .zip-msg.ng{color:var(--app-red)}
 .add-sheet .ff input{font-size:16px}
+.add-sheet .ff label{padding-top:6px}
+.add-sheet .ff{border-bottom:none}
 /* 場所の追加：入力欄ごとに枠をつける */
-.add-sheet .ff input,.add-sheet .ff select{border:1.5px solid #c4c4cc;border-radius:10px;padding:9px 11px;margin:4px 0 10px;background:#fff;box-sizing:border-box}
+.add-sheet .ff input,.add-sheet .ff select{border:1.5px solid #c4c4cc;border-radius:10px;padding:8px 11px;margin:2px 0 4px;background:#fff;box-sizing:border-box}
 .add-sheet .ff input:focus,.add-sheet .ff select:focus{border-color:var(--app-blue);box-shadow:0 0 0 3px rgba(0,122,255,.15)}
 
 /* アイコン選択 */
@@ -819,16 +821,16 @@ body{position:fixed;inset:0;width:100%}
         </div>
         <div class="ff">
           <label>場所の名前（空なら住所を使います）</label>
-          <input id="fName" type="text" oninput="updateFormIcon()" placeholder="例：京都中央郵便局">
+          <input id="fName" type="text" oninput="updateFormIcon()" placeholder="場所の名前">
         </div>
         <div class="ff">
           <label>郵便番号（7けた入れると、下の住所に自動で入ります）</label>
-          <input id="fZip" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="例：600-8216" oninput="zipInput()">
+          <input id="fZip" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="郵便番号" oninput="zipInput()">
           <div class="zip-msg" id="zipMsg"></div>
         </div>
         <div class="ff">
           <label>住所</label>
-          <input id="fAddr" type="text" placeholder="例：京都市下京区東塩小路町843">
+          <input id="fAddr" type="text" placeholder="住所">
         </div>
         <div class="ff">
           <label>備考</label>
@@ -1053,7 +1055,7 @@ function opKey(d){
   const TIPS=[
     'フォルダを開いて「地図で見る」で、全部の場所にピンが立ちます',
     '「≡」をつかんでフォルダに持っていくと、そのフォルダに入ります',
-    '終わった場所はチェックを付けると、灰色になります',
+    '「地図で見る」のピンを押すと、番号を変えられます',
     '備考の「19時〜21時」を押すと、地図のピンが赤になります',
     '「Appleルート」で、フォルダの場所を順番に回るルートが出ます',
     '詳細画面は、下にスワイプすると閉じます',
@@ -1267,7 +1269,6 @@ function mapRowHTML(){return document.getElementById('mapRowTpl').innerHTML;}
 function rowsHTML(list){
   return '<div class="place-list">'+list.map(([p,i],n)=>`
     <div class="pi${sel===i?' sel':''}${p.done?' done':''} ripple-host" data-i="${i}" onclick="selectPlace(${i})">
-      <span class="pi-chk${p.done?' on':''}" role="checkbox" aria-checked="${p.done?'true':'false'}" aria-label="終わった" onclick="event.stopPropagation();toggleDone(${i})"></span>
       <span class="pi-handle" onclick="event.stopPropagation()">≡</span>
       <span class="pi-num${p.time==='19-21'?' t19':''}">${n+1}</span>
       <div class="pi-icon">${iconHTML(emoji(p))}</div>
